@@ -460,6 +460,11 @@ int Som::variationalAutoEncoder(const DataSet *data, int minBmuHits)
 	int success = TRUE;
 	std::vector<double> probability(getHeight()*getWidth(), 1/(double)(getHeight()*getWidth()));
 	
+	std::random_device rd;
+    std::mt19937 gen(time(NULL));
+	
+	int modelVector;
+	
 	for( unsigned int i = 0; i < data->size(); i++ )
 	{
 		
@@ -473,25 +478,33 @@ int Som::variationalAutoEncoder(const DataSet *data, int minBmuHits)
 		// Find distribution for sample vector
 		probability = findRestrictedBmd(v, val, minBmuHits, w);
 		
+		std::discrete_distribution<int> d(probability.begin(), probability.end());
+		
+		modelVector = d(gen);
+		
+		std::cout << "Model vector: "<< modelVector << " is chosen with probability: " << probability[modelVector] << "\n";
+		
 		// Print in an Octave-friendly format
-		std::cout << "prob" << i << "= [";
-		for(unsigned int c = 0; c < width; c++)
-		{
-			for(unsigned int d = 0; d < height; d++)
-			{
-				std::cout << probability[d*width + c] << " ";
-			}
-			if(c < width -1) std::cout << ";";
-		}
-		std::cout << "]\n";
+		//std::cout << "prob" << i << "= [";
+		//for(unsigned int c = 0; c < width; c++)
+		//{
+		//	for(unsigned int d = 0; d < height; d++)
+		//	{
+		//		std::cout << probability[d*width + c] << " ";
+		//	}
+		//	if(c < width -1) std::cout << ";";
+		//}
+		//std::cout << "]\n";
 	}
 	
-	return success;
+	return modelVector;
 }
 
 int Som::autoEncoder(const DataSet *data, int minBmuHits)
 {
 	int success = TRUE;
+	
+	std::srand((unsigned)(time(NULL)+clock()));
 	
 	for( unsigned int i = 0; i < data->size(); i++ )
 	{
@@ -503,8 +516,19 @@ int Som::autoEncoder(const DataSet *data, int minBmuHits)
 		
 		std::vector<double> w = data->getWeights();
 		
+		// Now we're just getting the bmu to sample from that univariate normal distribution.
+		// What we could do is to take a distribution over model vectors (use variationalAutoEncoder function),
+		// sample from that distribution to get a stocastic model vector and then use that to sample
+		// from its univariate normal distribution
+		
+		// Fixed
+		
+		int bmuInt = variationalAutoEncoder(data, 500);
+		
+		SomIndex bmu(bmuInt % width, bmuInt / width);
+		
 		// Find best matching unit (bmu)
-		SomIndex bmu = findRestrictedBmu(v, val, minBmuHits, w);
+		//SomIndex bmu = findRestrictedBmu(v, val, minBmuHits, w);
 		
 		
 		if( verbose )
@@ -527,13 +551,14 @@ int Som::autoEncoder(const DataSet *data, int minBmuHits)
 				//
 				// Approximate normal distribution by sampling from L(0,1) and calculate logit(L)/1.6*sigma + mean = log(L/(1-L))/1.6*sigma + mean
 				// 
-				// std:srand(seed);
-				//
-				// double L = (double)(std::rand() % (int)(1000))/1000;
-				// double N = std::log(L/(1-L))/1.6*this->getSigmaNeuron(bmu)[n] + this->getNeuron(bmu)[n];
+				
+				double L = (double)(std::rand() % (int)(1000))/1000;
+				double N = std::log(L/(1-L))/1.6*this->getSigmaNeuron(bmu)[n] + this->getNeuron(bmu)[n];
+				
+				std::cout << data->getName(n) << "\t" << N << "\t" << "\n";
 				//
 				// As for now, we're just printing a deterministic value of this->getNeuron(bmu)[n]
-				std::cout << data->getName(n) << "\t" << this->getNeuron(bmu)[n] << "\n";
+				//std::cout << data->getName(n) << "\t" << this->getNeuron(bmu)[n] << "\n";
 			}
 		}
 		

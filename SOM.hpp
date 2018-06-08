@@ -14,6 +14,7 @@
 #include <cctype>
 #include <vector>
 #include <algorithm>
+#include <random>
 #include "Eigen/Dense"
 #include "sqlite3.h"
 
