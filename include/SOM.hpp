@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <random>
 #include "Eigen/Dense"
-#include "sqlite3.h"
+#include "sqlite/sqlite3.h"
 
 #define VERSION 1.00
 
