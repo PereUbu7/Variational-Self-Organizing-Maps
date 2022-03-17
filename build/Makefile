@@ -1,4 +1,4 @@
-CXX = g++ -I ../extern -I ../include -I /usr/include/
+CXX = g++ -std=c++20 -I ../extern -I ../include -I /usr/include/
 cc = gcc
 
 LIB = -lpthread -ldl
@@ -23,9 +23,13 @@ sqlite3.o : ../extern/sqlite/sqlite3.c
 test.a : ../tests/*.cpp libsom.a
 	$(CXX) $^ -o test $(LIB)
 
+perfTest.a : ../tests/performance/*.cpp libsom.a
+	$(CXX) $^ -o perfTest $(LIB)
+
 libsom : libsom.a
 sqlite : sqlite3.o
 test : test.a
+perfTest : perfTest.a
 
 clean :
 	rm -f $(BIN) *.o *.a $(BIN)
