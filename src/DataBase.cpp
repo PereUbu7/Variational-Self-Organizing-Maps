@@ -41,19 +41,23 @@ int DataBase::getRecord(char *buff[], int row, std::string icanName)
 int DataBase::startTransaction()
 {
 	char *err_msg;
-	if( sqlite3_exec(db, "BEGIN;", NULL, NULL, &err_msg) )
+	int retValue{};
+	if( retValue = sqlite3_exec(db, "BEGIN;", NULL, NULL, &err_msg) )
 	{
 		fprintf(stderr, "Failed to BEGIN transaction: %s\n", sqlite3_errmsg(db));
 	}
+	return retValue;
 }
 
 int DataBase::endTransaction()
 {
 	char *err_msg;
-	if( sqlite3_exec(db, "END;", NULL, NULL, &err_msg) )
+	int retValue{};
+	if( retValue = sqlite3_exec(db, "END;", NULL, NULL, &err_msg) )
 	{
 		fprintf(stderr, "Failed to END transaction: %s\n", sqlite3_errmsg(db));
 	}
+	return retValue;
 }
 
 int DataBase::getElement(char *buff, int row, std::string icanName)
