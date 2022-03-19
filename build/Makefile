@@ -1,5 +1,5 @@
 CXX = g++ 
-CXXFLAGS = -std=c++20 -I ../extern -I ../include -I /usr/include/
+CXXFLAGS = -Wall -std=c++20 -I ../extern -I ../include -I /usr/include/
 cc = gcc
 
 LIB = -lpthread -ldl

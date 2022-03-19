@@ -71,7 +71,7 @@ namespace Perftests
 
             auto startTime = high_resolution_clock::now();
 
-            for (int i{0}; i < numberOfRuns; ++i)
+            for (size_t i{0}; i < numberOfRuns; ++i)
                 sut.randomInitialize(1, 1);
 
             auto endTime = high_resolution_clock::now();
@@ -89,7 +89,7 @@ namespace Perftests
             auto validityVector = std::vector<int>{100, 1};
             auto weightVector = std::vector<double>{100, 1.0};
 
-            for (int i{0}; i < numberOfRuns; ++i)
+            for (size_t i{0}; i < numberOfRuns; ++i)
                 sut.findBmu(modelVector, validityVector, weightVector);
 
             auto endTime = high_resolution_clock::now();
