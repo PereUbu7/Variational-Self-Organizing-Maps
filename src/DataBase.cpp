@@ -10,7 +10,7 @@ DataBase::~DataBase()
 	;
 }
 
-int DataBase::open(char *fileName)
+int DataBase::open(const char *fileName)
 {
 	int rc = sqlite3_open_v2(fileName, &db, SQLITE_OPEN_READONLY, NULL);
 	

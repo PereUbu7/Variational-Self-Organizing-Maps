@@ -40,7 +40,7 @@ namespace Perftests
         {
         }
 
-        auto test_train(char *dbPath, const char *columnSpecPath, int weightDecayFunction)
+        auto test_train(const char *dbPath, const char *columnSpecPath, int weightDecayFunction)
         {
             DataBase db;
             auto dbOpenResult = db.open(dbPath);

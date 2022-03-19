@@ -57,7 +57,7 @@ class DataBase
 	public:
 		DataBase();
 		~DataBase();
-		int open(char*);
+		int open(const char*);
 		void close();
 		int getElement(char*, int, std::string);
 		int getMax(char*, std::string);
@@ -96,7 +96,8 @@ class DataSet
 		std::vector<int> continuous;
 		std::vector<double> weight;
 		std::vector<int> lastBMU;
-		int depth, n;
+		unsigned int depth;
+		int n;
 	
 public:
 		DataSet(const char*);
@@ -114,7 +115,7 @@ public:
 		void display() const;
 		void loadDataBase(DataBase *db);
 		void loadIcanFilter(const char *fileName);
-		int vectorLength() const;
+		unsigned int vectorLength() const;
 		
 		std::string getName(int) const;
 		

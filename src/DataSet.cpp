@@ -310,7 +310,7 @@ void DataSet::display() const
 	std::cout << "Number of samples: " << n << "\nVector length: " << depth << "\n";
 }
 
-int DataSet::vectorLength() const
+unsigned int DataSet::vectorLength() const
 {
 	return depth;
 }
