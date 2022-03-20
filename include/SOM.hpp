@@ -90,14 +90,13 @@ class DataSet
 	protected:
 		std::vector<Eigen::VectorXf> data;
 		std::vector<std::vector<int>> valid;
-		std::vector<unsigned int> index;
+		std::vector<size_t> index;
 		std::vector<std::string> variableNames;
 		std::vector<int> binary;
 		std::vector<int> continuous;
 		std::vector<double> weight;
 		std::vector<int> lastBMU;
-		unsigned int depth;
-		int n;
+		size_t depth, n;
 	
 public:
 		DataSet(const char*);
@@ -108,14 +107,14 @@ public:
 		std::vector<int> getContinuous() const;
 		std::vector<double> getWeights() const;
 		int *getLastBMU(int);
-		unsigned int size() const;
+		size_t size() const;
 		void addVector(Eigen::VectorXf);
 		void addSet(DataSet d);
 		void loadTextFile(const char*);
 		void display() const;
 		void loadDataBase(DataBase *db);
 		void loadIcanFilter(const char *fileName);
-		unsigned int vectorLength() const;
+		size_t vectorLength() const;
 		
 		std::string getName(int) const;
 		
@@ -135,7 +134,7 @@ class Som
 	
 	// Lägg till att ta hänsyn till validitet i functionerna som nu tar del av den variabeln
 	public:
-		Som(unsigned int, unsigned int, unsigned int);
+		Som(size_t, size_t, size_t);
 		Som(const char*);
 		~Som();
 		void train(DataSet*, int, double, double, double, double, int);
@@ -143,7 +142,7 @@ class Som
 		SomIndex trainSingle(Eigen::VectorXf, std::vector<int>, std::vector<double>, double, double, int*, int);
 		int measureSimilarity(const DataSet*, int, int);
 		int autoEncoder(const DataSet*, int);
-		int variationalAutoEncoder(const DataSet*, int);
+		size_t variationalAutoEncoder(const DataSet*, int);
 		SomIndex findBmu(Eigen::VectorXf, std::vector<int>, std::vector<double>) const;
 		SomIndex findLocalBmu(Eigen::VectorXf, std::vector<int>, int, std::vector<double>) const;
 		SomIndex findRestrictedBmu(Eigen::VectorXf, std::vector<int>, int, std::vector<double>) const;

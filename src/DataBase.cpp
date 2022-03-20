@@ -42,7 +42,7 @@ int DataBase::startTransaction()
 {
 	char *err_msg;
 	int retValue{};
-	if( retValue = sqlite3_exec(db, "BEGIN;", NULL, NULL, &err_msg) )
+	if( (retValue = sqlite3_exec(db, "BEGIN;", NULL, NULL, &err_msg)) )
 	{
 		fprintf(stderr, "Failed to BEGIN transaction: %s\n", sqlite3_errmsg(db));
 	}
@@ -53,7 +53,7 @@ int DataBase::endTransaction()
 {
 	char *err_msg;
 	int retValue{};
-	if( retValue = sqlite3_exec(db, "END;", NULL, NULL, &err_msg) )
+	if( (retValue = sqlite3_exec(db, "END;", NULL, NULL, &err_msg)) )
 	{
 		fprintf(stderr, "Failed to END transaction: %s\n", sqlite3_errmsg(db));
 	}

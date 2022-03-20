@@ -1,13 +1,16 @@
 CXX = g++ 
-CXXFLAGS = -Wall -std=c++20 -I ../extern -I ../include -I /usr/include/
+CXXFLAGS = -Wall -Wpedantic -Werror -std=c++20 -I ../extern -I ../include -I /usr/include/
 cc = gcc
+CCFLAGS = -Wall
 
 LIB = -lpthread -ldl
-BIN = sqlite libsom test perfTest
+BIN = sqlite libsom test perfTest VSOM
 
 debug: CXXFLAGS += -g -O0
+debug: CCFLAGS += -g -O0
 debug: all
 release: CXXFLAGS += -O3
+release: CCFLAGS += -O3
 release: all
 
 all : $(BIN)
@@ -26,18 +29,19 @@ SomIndex.o : ../src/SomIndex.cpp
 sqlite3.o : ../extern/sqlite/sqlite3.c
 	$(cc) -o $@ -c $^
 
-test.a : ../tests/*.cpp libsom.a
+test : ../tests/*.cpp libsom.a
 	$(CXX) $(CXXFLAGS) $^ -o test $(LIB)
 
-perfTest.a : ../tests/performance/*.cpp libsom.a
+perfTest : ../tests/performance/*.cpp libsom.a
 	$(CXX) $(CXXFLAGS) $^ -o perfTest $(LIB)
+
+VSOM : ../apps/main.cpp libsom.a
+	$(CXX) $(CXXFLAGS) $^ -o VSOM $(LIB)
 
 libsom : libsom.a
 sqlite : sqlite3.o
-test : test.a
-perfTest : perfTest.a
 
 clean :
 	rm -f $(BIN) *.o *.a $(BIN)
 
-.PHONY: all, clean, release, debug
+.PHONY: all, clean, release, debug, VSOM

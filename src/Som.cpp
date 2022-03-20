@@ -1,7 +1,7 @@
 #include "SOM.hpp"
 
 // Initialize an empty SOM
-Som::Som(unsigned int inWidth = 1, unsigned int inHeight = 1, unsigned int inDepth = 1)
+Som::Som(size_t inWidth = 1, size_t inHeight = 1, size_t inDepth = 1)
 {
 	// Create template vector for whole map
 	Eigen::VectorXf initV(inDepth);
@@ -123,23 +123,23 @@ double Som::euclidianWeightedDist(SomIndex pos, Eigen::VectorXf v, std::vector<i
 double Som::euclidianWeightedDist(int pos, Eigen::VectorXf v, std::vector<int> valid, std::vector<double> weights) const
 {
 	// Don't look at dimensions with invalid values
-	float tmp[valid.size()];
+	auto tmp = std::vector<float>(valid.size());
 	
 	Eigen::ArrayXf sM(sigmaMap[pos].size());
 	Eigen::VectorXf validEigen;
 	
-	for(unsigned int i = 0; i<valid.size(); i++)
+	for(size_t i = 0; i<valid.size(); i++)
 	{
 		tmp[i] = (float)valid[i]*weights[i];
 	}
 	
-	for(int i = 0;i<sigmaMap[pos].size(); i++)
+	for(size_t i = 0;i<static_cast<size_t>(sigmaMap[pos].size()); i++)
 	{
 		sM(i) = std::max((double)sigmaMap[pos][i], 0.00001);
 	}
 	
 	// validEigen is an Eigen vector with weight if valid and 0 if not
-	validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp, valid.size());
+	validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp.data(), valid.size());
 	
 	// (pos-v)*(pos-v)*weight*valid/sigma
 	return  (((this->getNeuron(pos) - v).array()/sM).matrix().dot( ((this->getNeuron(pos) - v).array()*validEigen.array()/sM).matrix() ) );
@@ -399,40 +399,40 @@ double Som::evaluate(const DataSet *data)
 {
 	double error = 0;
 	std::vector<int> val;
-	float bT[data->vectorLength()];
-	float cT[data->vectorLength()];
-	float tmp[data->vectorLength()];
+	auto bT = std::vector<float>(data->vectorLength());
+	auto cT = std::vector<float>(data->vectorLength());
+	auto tmp = std::vector<float>(data->vectorLength());
 	Eigen::VectorXf binaryEigen;
 	Eigen::VectorXf validEigen;
 	Eigen::VectorXf binaryError;
 	Eigen::ArrayXf ones(map[0].size(), 1);
 	
-	for(int n = 0; n<data->vectorLength(); n++)
+	for(size_t n = 0; n<data->vectorLength(); n++)
 	{
 		bT[n] = (float)data->getBinary()[n];
 		cT[n] = (float)data->getContinuous()[n];
 	}
 	
-	binaryEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(bT, map[0].size());
+	binaryEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(bT.data(), map[0].size());
 	
-	for(unsigned int i = 0; i<data->size(); i++)
+	for(size_t i = 0; i<data->size(); i++)
 	{
 		val = data->getValidity(i);
 		
-		for(int n = 0; n<data->vectorLength(); n++)
+		for(size_t n = 0; n<data->vectorLength(); n++)
 		{
 			tmp[n] = (float)val[n];
 			// Multiply valid vector with continuous vector in order to get valid times continious (all binary dimensions are = 0)
 			val[n] = val[n]*cT[n];
 		}
 		
-		validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp, map[0].size());
+		validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp.data(), map[0].size());
 		SomIndex bmu = this->findBmu(data->getData(i), val, data->getWeights());
 		
 		binaryError = (((this->getNeuron(bmu).array().log()*data->getData(i).array())+((ones-this->getNeuron(bmu).array()).log()*(ones-data->getData(i).array())))).matrix();
 		
 		// Replace NaNs and Infs with something big
-		for(int n = 0; n<data->vectorLength(); n++)
+		for(size_t n = 0; n<data->vectorLength(); n++)
 		{
 			binaryError[n] = std::isnan(binaryError[n]) || std::isinf(binaryError[n]) ? -99999 : binaryError[n];
 		}
@@ -455,15 +455,14 @@ double Som::evaluate(const DataSet *data)
 	return error;
 }
 
-int Som::variationalAutoEncoder(const DataSet *data, int minBmuHits)
+size_t Som::variationalAutoEncoder(const DataSet *data, int minBmuHits)
 {
-	int success = TRUE;
 	std::vector<double> probability(getHeight()*getWidth(), 1/(double)(getHeight()*getWidth()));
 	
 	std::random_device rd;
     std::mt19937 gen(time(NULL));
 	
-	int modelVector;
+	size_t modelVector{0};
 	
 	for( unsigned int i = 0; i < data->size(); i++ )
 	{
@@ -478,7 +477,7 @@ int Som::variationalAutoEncoder(const DataSet *data, int minBmuHits)
 		// Find distribution for sample vector
 		probability = findRestrictedBmd(v, val, minBmuHits, w);
 		
-		std::discrete_distribution<int> d(probability.begin(), probability.end());
+		std::discrete_distribution<size_t> d(probability.begin(), probability.end());
 		
 		modelVector = d(gen);
 		
@@ -581,24 +580,24 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 	int maxValueDataSetRow = 0;
 	int last = 0;
 	
-	float bT[data->vectorLength()];
-	float cT[data->vectorLength()];
+	auto bT = std::vector<float>(data->vectorLength());
+	auto cT = std::vector<float>(data->vectorLength());
 	Eigen::VectorXf binaryEigen, contEigen;
 	Eigen::ArrayXf ones(map[0].size(), 1);
 	
 	ones.setOnes(map[0].size());
 	
 	// Convert binary and continuous Eigen::Vectors to arrays
-	for(int n = 0;n<data->vectorLength(); n++)
+	for(size_t n = 0;n<data->vectorLength(); n++)
 	{
 		bT[n] = (float)data->getBinary()[n];
 		cT[n] = (float)data->getContinuous()[n];
 	}
 	
-	binaryEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(bT, map[0].size());
-	contEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(cT, map[0].size());
+	binaryEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(bT.data(), map[0].size());
+	contEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(cT.data(), map[0].size());
 	
-	for( unsigned int i = 0; i < data->size() + 1; i++ )
+	for( size_t i = 0; i < data->size() + 1; i++ )
 	{
 		if( i == data->size() )
 		{
@@ -606,7 +605,7 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 			last = 1;
 		}
 		
-		float tmp[data->vectorLength()];
+		auto tmp = std::vector<float>(data->vectorLength());
 		Eigen::VectorXf validEigen;
 		Eigen::ArrayXf binaryMap(map[0].size());
 		
@@ -623,7 +622,7 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 		// Modified sigma vector
 		Eigen::VectorXf sM(sigmaMap[pos].size());
 		
-		for(int n = 0;n<data->vectorLength(); n++)
+		for(size_t n = 0;n<data->vectorLength(); n++)
 		{
 			sM(n) = sigmaMap[pos](n) == 0 ? 0.00001 : sigmaMap[pos](n);
 			tmp[n] = (float)data->getValidity(i)[n];
@@ -634,7 +633,7 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 			}
 		}
 		
-		validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp, map[pos].size());
+		validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp.data(), map[pos].size());
 		
 		
 		// Calculate delta vector
@@ -730,13 +729,13 @@ SomIndex Som::trainSingle(Eigen::VectorXf v, std::vector<int> valid, std::vector
 	Eigen::VectorXf tempV(delta.size());
 	
 	// Conversion array for conversion of vector<int> valid to Eigen::VectorXf validEigen
-	float tmp[valid.size()];
+	auto tmp = std::vector<float>(valid.size());
 	
 	// Size of neighbourhood
-	unsigned int startX, startY, endX, endY;
+	size_t startX, startY, endX, endY;
 	
 	// Strength of neighbourhood. Calculated for each neuron
-	double neighbourhood;
+	double neighbourhood{1.0};
 	
 	// Only calculate new values within +- 2.5 standard deviations of neighbourhood
 	startX = std::max( (int)(bmu.getX()-2.5*sigma), 0);
@@ -751,7 +750,7 @@ SomIndex Som::trainSingle(Eigen::VectorXf v, std::vector<int> valid, std::vector
 	{
 		tmp[i] = (float)valid[i];
 	}
-	Eigen::VectorXf validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp, valid.size());
+	Eigen::VectorXf validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp.data(), valid.size());
 	
 	
 	for(unsigned int j = startY; j < endY; j++)
@@ -814,9 +813,9 @@ SomIndex Som::trainSingle(Eigen::VectorXf v, std::vector<int> valid, std::vector
 
 void Som::randomInitialize(int seed, float sigma)
 {
-	std:srand(seed);
+	std::srand(seed);
 	
-	for(unsigned int i = 0; i < width*height; i++)
+	for(size_t i = 0; i < width*height; i++)
 	{
 		// Initialize each element in each neuron to a value between -sigma and sigma
 		for(int n = 0; n < map[i].size(); n++)
@@ -1124,7 +1123,7 @@ void Som::load(const char *fileName)
 	int readWeightMapData = 0;
 	int readBmuHitsData = 0;
 	int readUMatrixData = 0;
-	int dimension = 0;
+	// unsigned long dimension = 0;
 	
 	char *columnMarker;
 	
@@ -1224,7 +1223,7 @@ void Som::load(const char *fileName)
 			// Find vector dimension
 			else if( line.compare(0, 9, "# ndims: ") == 0 )
 			{
-				dimension = std::stoul(&(line[9]), &ptr, 10);
+				// dimension = std::stoul(&(line[9]), &ptr, 10);
 				//std::cout << "Found ndim line: " << dimension << "\n";
 				
 				getline(file, line);

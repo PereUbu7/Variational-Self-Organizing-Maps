@@ -104,14 +104,14 @@ std::vector<double> DataSet::getWeights() const
 	return weight;
 }
 
-unsigned int DataSet::size() const
+size_t DataSet::size() const
 {
 	return n;
 }
 
 void DataSet::addVector(Eigen::VectorXf v)
 {
-	if( v.rows() == depth )
+	if( static_cast<size_t>(v.rows()) == depth )
 	{
 		data.push_back(v);
 		n += 1;
@@ -124,7 +124,7 @@ void DataSet::addSet(DataSet d)
 {
 	if( d.size() == n )
 	{
-		for(int i = 0; i < d.size(); i++)
+		for(size_t i = 0; i < d.size(); i++)
 		{
 			data.push_back(d.getData(i));
 			n += 1;
@@ -155,7 +155,7 @@ void DataSet::loadDataBase(DataBase *db)
 	
 	// Shuffle indices for data and valid maps
 	index.resize(numberOfRows);
-	for( int k = 0; k<index.size(); k++)
+	for( size_t k = 0; k<index.size(); k++)
 		index[k] = k;
 	shuffle();
 	
@@ -169,7 +169,7 @@ void DataSet::loadDataBase(DataBase *db)
 	for(int r = db->minId(); r < db->maxId() + 1; r++)
 	{
 		// Loop over all columns of record
-		for(int i = 0; i < depth; i++)
+		for(size_t i = 0; i < depth; i++)
 		{
 				if( db->doesExist(r) )
 					db->getElement(valueBuffer, r, variableNames[i]);
@@ -215,13 +215,13 @@ void DataSet::loadTextFile(const char *fileName)
 	char ch,
 		*ptr,
 		*nextColumn;
-	int vectorElement = 0,
-		numberOfNewlines = 0,
+	int numberOfNewlines = 0,
 		numberOfColumns = 0,
 		maxNumberOfColumns = 0,
 		minNumberOfColumns = 1000000,
 		i = 0,
 		icanIndex = 0;
+	size_t vectorElement = 0;
 	double tempValue;
 	
 	if( (fp = fopen(fileName, "r")) == NULL )
@@ -310,7 +310,7 @@ void DataSet::display() const
 	std::cout << "Number of samples: " << n << "\nVector length: " << depth << "\n";
 }
 
-unsigned int DataSet::vectorLength() const
+size_t DataSet::vectorLength() const
 {
 	return depth;
 }
