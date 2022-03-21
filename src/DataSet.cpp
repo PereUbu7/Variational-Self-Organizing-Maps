@@ -1,19 +1,23 @@
-#include "SOM.hpp"
+#include "DataSet.hpp"
 
-DataSet::DataSet(const char *fileName)
+#include <iostream>
+#include <fstream>
+
+DataSet::DataSet(const char *fileName, bool verbose)
 {
+	_verbose = verbose;
 	std::ifstream inFile;
 	std::string tempLine;
 	std::string token;
 	std::string name;
 	int c = 0;
-	int b = FALSE;
+	bool b = false;
 	double w = 1;
 	char *ptr;
 	
 	depth = 0;
 	
-	if(verbose) std::cout << "Opening: " << fileName << "\n";
+	if(_verbose) std::cout << "Opening: " << fileName << "\n";
 	
 	inFile.open(fileName);
 	
@@ -21,7 +25,7 @@ DataSet::DataSet(const char *fileName)
 	{
 		std::istringstream iline(tempLine);
 		
-		b = FALSE;
+		b = false;
 		c = 0;
 		while(std::getline(iline, token, '\t'))
 		{
@@ -40,7 +44,7 @@ DataSet::DataSet(const char *fileName)
 					if( token.compare("binary") == 0 )
 					{
 						//std::cout << name << " is treated as a binary variable.\n";
-						b = TRUE;
+						b = true;
 					}
 				}
 			}
@@ -60,13 +64,8 @@ DataSet::DataSet(const char *fileName)
 	depth = variableNames.size();
 	
 	
-	if(verbose) std::cout << "Dataset depth: " << depth <<"\n";
+	if(_verbose) std::cout << "Dataset depth: " << depth <<"\n";
 	
-}
-
-DataSet::~DataSet()
-{
-	;
 }
 
 Eigen::VectorXf DataSet::getData(int n) const
@@ -163,7 +162,7 @@ void DataSet::loadDataBase(DataBase *db)
 	
 	db->startTransaction();
 	
-	if(verbose) std::cout << "Min:" << db->minId() << "\tMax:" << db->maxId() << "\n";
+	if(_verbose) std::cout << "Min:" << db->minId() << "\tMax:" << db->maxId() << "\n";
 	
 	// Loop over all records in the entire database
 	for(int r = db->minId(); r < db->maxId() + 1; r++)
@@ -195,12 +194,12 @@ void DataSet::loadDataBase(DataBase *db)
 		}
 		currentRow++;
 		
-		if( ( ( (db->maxId()-db->minId()) > 100 && (r % (int)((db->maxId()-db->minId())/100)) == 0 ) || (db->maxId()-db->minId()) < 100 ) && verbose )
+		if( ( ( (db->maxId()-db->minId()) > 100 && (r % (int)((db->maxId()-db->minId())/100)) == 0 ) || (db->maxId()-db->minId()) < 100 ) && _verbose )
 		{
-			if(verbose) std::cout << "\rLoading database:" << 100*r/(db->maxId()-db->minId()) << "%";
+			if(_verbose) std::cout << "\rLoading database:" << 100*r/(db->maxId()-db->minId()) << "%";
 		}
 	}
-	if(verbose) std::cout << "\rLoading database:100%\n";
+	if(_verbose) std::cout << "\rLoading database:100%\n";
 	
 	db->endTransaction();
 }
@@ -248,7 +247,7 @@ void DataSet::loadTextFile(const char *fileName)
 			numberOfColumns++;
 	}
 	
-	if(verbose) std::cout << fileName << ": File size: " << lineString.size() << "\nNumber of lines: " << numberOfNewlines << "\nBiggest depth: " << maxNumberOfColumns << "\nSmallest depth: " << minNumberOfColumns << "\n";
+	if(_verbose) std::cout << fileName << ": File size: " << lineString.size() << "\nNumber of lines: " << numberOfNewlines << "\nBiggest depth: " << maxNumberOfColumns << "\nSmallest depth: " << minNumberOfColumns << "\n";
 	
 	nextColumn = &lineString[0];
 	

@@ -1,10 +1,11 @@
 #include "SOM.hpp"
 
+#include <iostream>
+#include <ctime>
+
 void displayHelp();
 
 using namespace std;
-
-int verbose = 0;
 
 int main(int argc, char *argv[])
 {
@@ -17,7 +18,8 @@ int main(int argc, char *argv[])
 	unsigned int allowedNumberOfStdDev = 0;
 	unsigned int minBmuHits = 0;
 	
-	int success = FALSE;
+	bool success = false;
+	bool verbose = false;
 	
 	double eta0 = 0;
 	double etaDec = 0;
@@ -32,7 +34,6 @@ int main(int argc, char *argv[])
 	int measuringSOM = 0;
 	int autoencoderSOM = 0;
 	int variationalAutoEncoderSOM = 0;
-	DataBase db;
 	
 	if( argc < (ARG_SETTING + 1) )
 	{
@@ -92,6 +93,8 @@ int main(int argc, char *argv[])
 		displayHelp();
 		exit(-1);
 	}
+
+	auto db = DataBase{verbose};
 	
 	if( trainingSOM )
 	{
@@ -115,11 +118,11 @@ int main(int argc, char *argv[])
 			displayHelp();
 			exit(-1);
 		}
-		
+
 		if( db.open(argv[ARG_DB_FILE]) == 0 )
 			return 0;
 			
-		DataSet trainingSet("icanNames.txt");
+		auto trainingSet = DataSet{"icanNames.txt", verbose};
 		//trainingSet.loadTextFile("7246051 efter rep2.txt");
 		//trainingSet.loadTextFile("7246037 20s.txt");
 		
@@ -151,7 +154,7 @@ int main(int argc, char *argv[])
 		if( db.open(argv[ARG_DB_FILE]) == 0 )
 			return 0;
 			
-		DataSet devSet("icanNames.txt");
+		auto devSet = DataSet{"icanNames.txt", verbose};
 		
 		//devSet.loadTextFile("7246051 efter rep.txt");
 		devSet.loadDataBase(&db);
@@ -172,7 +175,7 @@ int main(int argc, char *argv[])
 		if( db.open(argv[ARG_DB_FILE]) == 0 )
 			return 0;
 			
-		DataSet testSet("icanNames.txt");
+		auto testSet = DataSet{"icanNames.txt", verbose};
 		
 		testSet.loadDataBase(&db);
 		
@@ -187,11 +190,11 @@ int main(int argc, char *argv[])
 		
 		minBmuHits = std::strtoul(argv[ARG_MIN_BMU_HITS], &ptr, 10);
 		
-		DataSet testSet("icanNames.txt");
+		auto testSet = DataSet{"icanNames.txt", verbose};
 		
 		testSet.loadDataBase(&db);
 		
-		Som test(argv[ARG_SOM_FILE]);
+		auto test = Som{argv[ARG_SOM_FILE], verbose};
 		success = test.autoEncoder(&testSet, minBmuHits);
 	}
 	else if( variationalAutoEncoderSOM )
@@ -201,11 +204,11 @@ int main(int argc, char *argv[])
 		
 		minBmuHits = std::strtoul(argv[ARG_MIN_BMU_HITS], &ptr, 10);
 		
-		DataSet testSet("icanNames.txt");
+		auto testSet = DataSet{"icanNames.txt", verbose};
 		
 		testSet.loadDataBase(&db);
 		
-		Som test(argv[ARG_SOM_FILE]);
+		auto test = Som{argv[ARG_SOM_FILE], verbose};
 		success = test.variationalAutoEncoder(&testSet, minBmuHits);
 	}
 	

@@ -1,4 +1,4 @@
-#include "SOM.hpp"
+#include "SomIndex.hpp"
 
 SomIndex::SomIndex(int inX = 0, int inY = 0)
 {
@@ -6,10 +6,6 @@ SomIndex::SomIndex(int inX = 0, int inY = 0)
 	y = inY;
 }
 
-SomIndex::~SomIndex()
-{
-	;
-}
 /*
 int SomIndex::getSomIndex(Som map)
 {

@@ -1,4 +1,7 @@
 #include "SOM.hpp"
+#include "Database.hpp"
+#include "DataSet.hpp"
+
 #include "dateTimeUtils.hpp"
 
 #include <chrono>

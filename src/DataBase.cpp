@@ -1,20 +1,35 @@
-#include "SOM.hpp"
+#include "Database.hpp"
 
-DataBase::DataBase()
+#include <iostream>
+#include <cstring>
+
+int saveElement(void *buff, int argc, char **argv, char **azColName)
 {
-	;
+	char *ptr = (char*)buff;
+	
+	// If value string is not NULL
+	if( argv[0] )
+	{
+		strcpy(ptr, argv[0]);
+		//std::cout << azColName[0] << ":\t" << ptr << "\n";
+	}
+	else
+	{
+		strcpy(ptr, "NULL");
+	}
+	return 0;
 }
 
 DataBase::~DataBase()
 {
-	;
+	sqlite3_close(db);
 }
 
-int DataBase::open(const char *fileName)
+bool DataBase::open(const char *fileName)
 {
 	int rc = sqlite3_open_v2(fileName, &db, SQLITE_OPEN_READONLY, NULL);
 	
-	if( verbose )
+	if( _verbose )
 		std::cout << "Opening database: " << fileName << "\n";
 	
 	// If error
@@ -23,14 +38,14 @@ int DataBase::open(const char *fileName)
         std::cout << "Cannot open database: " << sqlite3_errmsg(db) << "\n";
         sqlite3_close(db);
         
-        return (FALSE);
+        return false;
     }
-	return TRUE;
+	return true;
 }
 
 void DataBase::close()
 {
-	
+	sqlite3_close(db);
 }
 
 int DataBase::getRecord(char *buff[], int row, std::string icanName)
@@ -78,23 +93,6 @@ int DataBase::getElement(char *buff, int row, std::string icanName)
     }
 	
 	return(0);
-}
-
-int saveElement(void *buff, int argc, char **argv, char **azColName)
-{
-	char *ptr = (char*)buff;
-	
-	// If value string is not NULL
-	if( argv[0] )
-	{
-		strcpy(ptr, argv[0]);
-		//std::cout << azColName[0] << ":\t" << ptr << "\n";
-	}
-	else
-	{
-		strcpy(ptr, "NULL");
-	}
-	return 0;
 }
 
 int DataBase::rows()

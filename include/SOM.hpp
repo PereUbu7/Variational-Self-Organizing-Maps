@@ -1,27 +1,17 @@
-#ifndef SOM_HPP_INCLUDED
-#define SOM_HPP_INCLUDED
+#pragma once
 
 #define _GLIBCXX_USE_C99 1
 
-#include <iostream>
-#include <fstream>
-#include <stdio.h>
-#include <iomanip>
-#include <cmath>
-#include <cstdlib>
-#include <ctime>
-#include <cstring>
-#include <cctype>
+#include "SomIndex.hpp"
+#include "DataSet.hpp"
+
 #include <vector>
-#include <algorithm>
-#include <random>
 #include "Eigen/Dense"
-#include "sqlite/sqlite3.h"
 
 #define VERSION 1.00
 
 #define ARG_VERBOSE 1
-#define ARG_SETTING 2
+#define ARG_SETTING 2 
 
 #define ARG_DB_FILE 3
 #define ARG_SOM_FILE 4
@@ -43,84 +33,6 @@
 
 #define SIGMA_SWITCH_TO_LOCAL 1
 
-#define TRUE 1
-#define FALSE 0
-
-extern int verbose;
-
-int saveElement(void*, int, char**, char**);
-
-class DataBase
-{
-	protected:
-		sqlite3 *db;
-	public:
-		DataBase();
-		~DataBase();
-		int open(const char*);
-		void close();
-		int getElement(char*, int, std::string);
-		int getMax(char*, std::string);
-		int getRecord(char*[], int, std::string);
-		int rows();
-		int minId();
-		int maxId();
-		int doesExist(int);
-		int startTransaction();
-		int endTransaction();
-};
-
-class SomIndex
-{
-	protected:
-		int x,y;
-	
-	public:
-		SomIndex(int, int);
-		~SomIndex();
-		//int getSomIndex(Som);
-		unsigned int getX() const;
-		unsigned int getY() const;
-		void setX(int);
-		void setY(int);
-};
-
-class DataSet
-{
-	protected:
-		std::vector<Eigen::VectorXf> data;
-		std::vector<std::vector<int>> valid;
-		std::vector<size_t> index;
-		std::vector<std::string> variableNames;
-		std::vector<int> binary;
-		std::vector<int> continuous;
-		std::vector<double> weight;
-		std::vector<int> lastBMU;
-		size_t depth, n;
-	
-public:
-		DataSet(const char*);
-		~DataSet();
-		Eigen::VectorXf getData(int) const;
-		std::vector<int> getValidity(int) const;
-		std::vector<int> getBinary() const;
-		std::vector<int> getContinuous() const;
-		std::vector<double> getWeights() const;
-		int *getLastBMU(int);
-		size_t size() const;
-		void addVector(Eigen::VectorXf);
-		void addSet(DataSet d);
-		void loadTextFile(const char*);
-		void display() const;
-		void loadDataBase(DataBase *db);
-		void loadIcanFilter(const char *fileName);
-		size_t vectorLength() const;
-		
-		std::string getName(int) const;
-		
-		void shuffle();
-};
-
 class Som
 {
 	protected:
@@ -131,12 +43,13 @@ class Som
 		std::vector<int> bmuHits;
 		std::vector<double> uMatrix;
 		unsigned int height, width;
+		bool _verbose;
 	
 	// Lägg till att ta hänsyn till validitet i functionerna som nu tar del av den variabeln
 	public:
-		Som(size_t, size_t, size_t);
-		Som(const char*);
-		~Som();
+		Som(size_t, size_t, size_t, bool verbose = false);
+		Som(const char*, bool verbose = false);
+		~Som() = default;
 		void train(DataSet*, int, double, double, double, double, int);
 		double evaluate(const DataSet*);
 		SomIndex trainSingle(Eigen::VectorXf, std::vector<int>, std::vector<double>, double, double, int*, int);
@@ -165,6 +78,3 @@ class Som
 		void load(const char*);
 		Eigen::VectorXf getSizeFromFile(const char*);
 };
-
-
-#endif

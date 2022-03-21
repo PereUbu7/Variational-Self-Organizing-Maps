@@ -1,8 +1,13 @@
 #include "SOM.hpp"
 
+#include <iostream>
+#include <fstream>
+#include <random>
+
 // Initialize an empty SOM
-Som::Som(size_t inWidth = 1, size_t inHeight = 1, size_t inDepth = 1)
+Som::Som(size_t inWidth = 1, size_t inHeight = 1, size_t inDepth = 1, bool verbose)
 {
+	_verbose = verbose;
 	// Create template vector for whole map
 	Eigen::VectorXf initV(inDepth);
 	
@@ -12,7 +17,7 @@ Som::Som(size_t inWidth = 1, size_t inHeight = 1, size_t inDepth = 1)
 	weightMap.resize(inWidth*inHeight);
 	SMap.resize(inWidth*inHeight, initV);
 	
-	for(unsigned int i = 0; i < inWidth*inHeight; i++)
+	for(size_t i = 0; i < inWidth*inHeight; i++)
 	{
 		// Initialize each element in each neuron to 0
 		for(int n = 0; n < sigmaMap[i].rows(); n++)
@@ -37,13 +42,14 @@ Som::Som(size_t inWidth = 1, size_t inHeight = 1, size_t inDepth = 1)
 }
 
 // Initialize SOM from trained data
-Som::Som(const char *SOMFileName)
+Som::Som(const char *SOMFileName, bool verbose)
 {
+	_verbose = verbose;
 	// Create template vector for whole map
 	Eigen::VectorXf initV(0);
 	initV = getSizeFromFile(SOMFileName);
 	
-	if(verbose) std::cout << "width: " << width << "\theight: " << height << "\tlength: " << initV.size() << "\n";
+	if(_verbose) std::cout << "width: " << width << "\theight: " << height << "\tlength: " << initV.size() << "\n";
 	
 	// Set map to correct size with every Vector equal to size returned by getSizeFromFile()
 	map.resize(width*height, initV);
@@ -69,12 +75,6 @@ Som::Som(const char *SOMFileName)
 	uMatrix.resize(width*height, 0);
 	
 	this->load(SOMFileName);
-}
-
-Som::~Som()
-{
-	// No allocated memory to delete at destruction
-	;
 }
 
 void Som::display() const
@@ -105,7 +105,7 @@ void Som::display() const
 }
 
 // Returns the Euclidian squared distance between neuron at position pos and vector v.
-// Considers only dimensions where valid is TRUE.
+// Considers only dimensions where valid is true.
 // All dimensions are weighed individually by weights vector
 double Som::euclidianWeightedDist(SomIndex pos, Eigen::VectorXf v, std::vector<int> valid, std::vector<double> weights) const
 {
@@ -118,7 +118,7 @@ double Som::euclidianWeightedDist(SomIndex pos, Eigen::VectorXf v, std::vector<i
 }
 
 // Returns the Euclidian squared distance between neuron at position pos and vector v.
-// Considers only dimensions where valid is TRUE.
+// Considers only dimensions where valid is true.
 // All dimensions are weighed individually by weights vector
 double Som::euclidianWeightedDist(int pos, Eigen::VectorXf v, std::vector<int> valid, std::vector<double> weights) const
 {
@@ -241,7 +241,7 @@ SomIndex Som::findLocalBmu(Eigen::VectorXf v, std::vector<int> valid, int lastBM
 	int currentX, currentY;
 	int startX, endX;
 	
-	bool success = FALSE;
+	bool success = false;
 	
 	while(!success)
 	{
@@ -273,7 +273,7 @@ SomIndex Som::findLocalBmu(Eigen::VectorXf v, std::vector<int> valid, int lastBM
 			// If BMU has not changed. Do no more
 			if( minIndex == lastBMU )
 			{
-				success = TRUE;
+				success = true;
 				SomIndex returnIndex(minIndex % width, minIndex / width);
 				return returnIndex;
 			}
@@ -342,7 +342,7 @@ SomIndex Som::findLocalBmu(Eigen::VectorXf v, std::vector<int> valid, int lastBM
 			// If BMU did not change since last try, do no more
 			if( minIndex == lastMeasured )
 			{
-				success = TRUE;
+				success = true;
 				SomIndex returnIndex(minIndex % width, minIndex / width);
 				return returnIndex;
 			}
@@ -446,11 +446,11 @@ double Som::evaluate(const DataSet *data)
 		//std::cout << "X:" << bmu.getX() << "\tY:" << bmu.getY() << "\tbinError:" << binaryError[6] << "\tv:" << data->getData(i)[6] << "\tmap:" << this->getNeuron(bmu)[6] << "\tbin?:" << binaryEigen[6] << "\tval?:" << validEigen[6] << "\n";
 		//std::cout << "\terror: " << error << "\ti+1:" << i+1 << "\tx_(i+1):" << this->euclidianWeightedDist(bmu, data->getData(i), val, data->getWeights()) << "\tbinary error:" << std::sqrt(binaryError.dot(binaryError)) << "\n";
 		
-		if( ( ( (data->size()) > 100 && (i % (int)((data->size())/100)) == 0 ) || (data->size()) < 100 ) && verbose )
+		if( ( ( (data->size()) > 100 && (i % (int)((data->size())/100)) == 0 ) || (data->size()) < 100 ) && _verbose )
 			std::cout << "\rEvaluating dataset:" << 100*i/(data->size()) << "%";
 	}
 	
-	if(verbose) std::cout << "\rEvaluating dataset:100%\n";
+	if(_verbose) std::cout << "\rEvaluating dataset:100%\n";
 	
 	return error;
 }
@@ -501,11 +501,11 @@ size_t Som::variationalAutoEncoder(const DataSet *data, int minBmuHits)
 
 int Som::autoEncoder(const DataSet *data, int minBmuHits)
 {
-	int success = TRUE;
+	bool success = true;
 	
 	std::srand((unsigned)(time(NULL)+clock()));
 	
-	for( unsigned int i = 0; i < data->size(); i++ )
+	for( size_t i = 0; i < data->size(); i++ )
 	{
 		
 		// Extract sample vector
@@ -530,7 +530,7 @@ int Som::autoEncoder(const DataSet *data, int minBmuHits)
 		//SomIndex bmu = findRestrictedBmu(v, val, minBmuHits, w);
 		
 		
-		if( verbose )
+		if( _verbose )
 		{
 			std::cout << "X: " << bmu.getX() << "\tY: " << bmu.getY() << "\tID: " << i << "\n";
 		}
@@ -538,13 +538,13 @@ int Som::autoEncoder(const DataSet *data, int minBmuHits)
 		
 		for( int n = 0; n < v.size(); n++ )
 		{
-			// These ifs have to be sorted out. Why did I condition it on verbose this way?!?!
-			if( !verbose ) 
+			// These ifs have to be sorted out. Why did I condition it on _verbose this way?!?!
+			if( !_verbose ) 
 			{
 				std::cout<< v(n)  << "\n";
 			}
 			
-			if( verbose )
+			if( _verbose )
 			{	// This value should be sampled from a normal distribution with mean this->getNeuron(bmu)[n] and standard deviation this->getSigmaNeuron(bmu)[n] if continuous
 				// and from a probability of (1-n)*this->getNeuron(bmu)[n] + n*(1-this->getNeuron(bmu)[n]) if binary
 				//
@@ -575,7 +575,7 @@ int Som::autoEncoder(const DataSet *data, int minBmuHits)
 // COLUMN_NAME \t Record value \t Min of approved interval \t Max of approved interval
 int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 {
-	int success = TRUE;
+	bool success = true;
 	float maxValue = -99999999;
 	int maxValueDataSetRow = 0;
 	int last = 0;
@@ -649,16 +649,16 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 		Eigen::ArrayXf max = ((/*contEigen.array()*/((this->getNeuron(bmu) + sM*numOfSigmas).array())));// + 
 		//(binaryEigen.array()*(binaryMap + 0.0001*ones)));
 		
-		if( verbose )
+		if( _verbose )
 		{
 			std::cout << "X: " << bmu.getX() << "\tY: " << bmu.getY() << "\tID: " << i << "\n";
 		}
 		
 		//std::cout << "# BMU hits: " << bmuHits[pos] << "\tX: " << bmu.getX() << "\tY: " << bmu.getY() << "\n";
-		//if( ( ( (data->size()) > 100 && (i % (int)((data->size())/100)) == 0 ) || (data->size()) < 100 ) && verbose )
+		//if( ( ( (data->size()) > 100 && (i % (int)((data->size())/100)) == 0 ) || (data->size()) < 100 ) && _verbose )
 		//	std::cout << "\rMeasuring dataset:" << 100*i/(data->size()) << "%";
 			
-		if(last && verbose)
+		if(last && _verbose)
 		{
 			//std::cout << "\rMeasuring dataset:100%\n";
 			std::cout << "Measurement nr: " << i << " is chosen\n";
@@ -677,18 +677,18 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 			//binOnLoss(n) = std::isnan(binOnLoss(n)) ? 0 : binOnLoss(n);
 			//binOffLoss(n) = std::isnan(binOffLoss(n)) ? 0 : binOffLoss(n);
 			
-			if( ((v(n) < min(n) || v(n) > max(n)) && validEigen(n)) && verbose ) 
+			if( ((v(n) < min(n) || v(n) > max(n)) && validEigen(n)) && _verbose ) 
 			{
 				std::cout << data->getName(n) << "\t( " << v(n) << " ) [" << min(n) << " - " << max(n) << "]\n";
-				success = FALSE;
+				success = false;
 			}
 			
-			if(!verbose && validEigen(n) && last)
+			if(!_verbose && validEigen(n) && last)
 			{
 				std::cout << data->getName(n) << "\t" << delta(n)/*+binOnLoss(n)+binOffLoss(n)*/ << "\t" << v(n) << "\t" << min(n) << "\t" << max(n) << "\n";
 				
 				if( ((v(n) < min(n) || v(n) > max(n)) && validEigen(n)) )
-					success = FALSE;
+					success = false;
 			}
 		}
 		
@@ -925,7 +925,7 @@ void Som::updateUMatrix(const DataSet *data)
 	
 	// Normalize to 0-255 interval
 	//span = max - min;
-	//if(verbose) std::cout << "Span: " << span << "\nMin: " << min << "\nMax: " << max << "\n";
+	//if(_verbose) std::cout << "Span: " << span << "\nMin: " << min << "\nMax: " << max << "\n";
 	for( unsigned int i = 0; i < uMatrix.size(); i++)
 	{
 		uMatrix[i] = U[i];
@@ -1081,12 +1081,12 @@ Eigen::VectorXf Som::getSizeFromFile(const char *fileName)
 		exit(EXIT_FAILURE);
 	}
 	
-	while ( getline (file,line) )
+	while ( std::getline (file,line) )
 	{
 		// Check vector length
 		if( line.compare(0, 9, "# ndims: ") == 0 )
 		{
-			getline(file, line);
+			std::getline(file, line);
 			found = line.find_last_of(" ");
 			loadedVectorLength = std::stoul(line.substr(found+1), &ptr, 10);
 			initV.resize(loadedVectorLength);
