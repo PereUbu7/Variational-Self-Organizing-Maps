@@ -17,10 +17,10 @@ Som::Som(size_t inWidth = 1, size_t inHeight = 1, size_t inDepth = 1, bool verbo
 	weightMap.resize(inWidth*inHeight);
 	SMap.resize(inWidth*inHeight, initV);
 	
-	for(size_t i = 0; i < inWidth*inHeight; i++)
+	for(size_t i = 0; i < inWidth*inHeight; ++i)
 	{
 		// Initialize each element in each neuron to 0
-		for(int n = 0; n < sigmaMap[i].rows(); n++)
+		for(int n = 0; n < sigmaMap[i].rows(); ++n)
 		{
 			map[i](n) = 0;
 			sigmaMap[i](n) = 0;
@@ -57,10 +57,10 @@ Som::Som(const char *SOMFileName, bool verbose)
 	weightMap.resize(width*height);
 	SMap.resize(width*height, initV);
 	
-	for(unsigned int i = 0; i < width*height; i++)
+	for(size_t i = 0; i < width*height; ++i)
 	{
 		// Initialize each element in each neuron to 0
-		for(int n = 0; n < sigmaMap[i].size(); n++)
+		for(int n = 0; n < sigmaMap[i].size(); ++n)
 		{
 			sigmaMap[i](n) = 0;
 			SMap[i](n) = 0;
@@ -95,9 +95,9 @@ void Som::display() const
 	}
 	*/
 	//Print Bmu hits
-	for(unsigned int i = 0; i < this->getHeight(); i++)
+	for(size_t i = 0; i < this->getHeight(); ++i)
 	{
-		for(unsigned int j = 0; j < this->getWidth(); j++)
+		for(size_t j = 0; j < this->getWidth(); ++j)
 			std::cout << bmuHits[i*width+j] << "\t";
 		
 		std::cout << "\n";
@@ -107,7 +107,9 @@ void Som::display() const
 // Returns the Euclidian squared distance between neuron at position pos and vector v.
 // Considers only dimensions where valid is true.
 // All dimensions are weighed individually by weights vector
-double Som::euclidianWeightedDist(SomIndex pos, Eigen::VectorXf v, std::vector<int> valid, std::vector<double> weights) const
+double Som::euclidianWeightedDist(
+	const SomIndex &pos, const Eigen::VectorXf &v, 
+	const std::vector<int> &valid, const std::vector<double> &weights) const
 {
 	//return std::sqrt( (this->getNeuron(pos) - v).dot(this->getNeuron(pos) - v) );
 	
@@ -120,7 +122,9 @@ double Som::euclidianWeightedDist(SomIndex pos, Eigen::VectorXf v, std::vector<i
 // Returns the Euclidian squared distance between neuron at position pos and vector v.
 // Considers only dimensions where valid is true.
 // All dimensions are weighed individually by weights vector
-double Som::euclidianWeightedDist(int pos, Eigen::VectorXf v, std::vector<int> valid, std::vector<double> weights) const
+double Som::euclidianWeightedDist(
+	const size_t &pos, const Eigen::VectorXf &v, 
+	const std::vector<int> &valid, const std::vector<double> &weights) const
 {
 	// Don't look at dimensions with invalid values
 	auto tmp = std::vector<float>(valid.size());
@@ -128,12 +132,12 @@ double Som::euclidianWeightedDist(int pos, Eigen::VectorXf v, std::vector<int> v
 	Eigen::ArrayXf sM(sigmaMap[pos].size());
 	Eigen::VectorXf validEigen;
 	
-	for(size_t i = 0; i<valid.size(); i++)
+	for(size_t i = 0; i<valid.size(); ++i)
 	{
 		tmp[i] = (float)valid[i]*weights[i];
 	}
 	
-	for(size_t i = 0;i<static_cast<size_t>(sigmaMap[pos].size()); i++)
+	for(size_t i = 0;i<static_cast<size_t>(sigmaMap[pos].size()); ++i)
 	{
 		sM(i) = std::max((double)sigmaMap[pos][i], 0.00001);
 	}
@@ -165,7 +169,7 @@ Eigen::VectorXf Som::getNeuron(SomIndex i) const
 	return map[i.getY()*width+i.getX()];
 }
 
-Eigen::VectorXf Som::getNeuron(int i) const
+Eigen::VectorXf Som::getNeuron(size_t i) const
 {
 	return map[i];
 }
@@ -175,14 +179,14 @@ Eigen::VectorXf Som::getSigmaNeuron(SomIndex i) const
 	return sigmaMap[i.getY()*width+i.getX()];
 }
 
-Eigen::VectorXf Som::getSigmaNeuron(int i) const
+Eigen::VectorXf Som::getSigmaNeuron(size_t i) const
 {
 	return sigmaMap[i];
 }
 
 // Search through whole map and return index of neuron that is closest to v.
 // Only considers valid dimensions with weights
-SomIndex Som::findBmu(Eigen::VectorXf v, std::vector<int> valid, std::vector<double> weights) const
+SomIndex Som::findBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, const std::vector<double> &weights) const
 {
 	double minDist = this->euclidianWeightedDist(0, v, valid, weights);
 	int minIndex = 0;
@@ -205,7 +209,8 @@ SomIndex Som::findBmu(Eigen::VectorXf v, std::vector<int> valid, std::vector<dou
 
 // Search through whole map where bmuHits > minBmuHits and return index of neuron that is closest to v.
 // Only considers valid dimensions with weights
-SomIndex Som::findRestrictedBmu(Eigen::VectorXf v, std::vector<int> valid, int minBmuHits, std::vector<double> weights) const
+SomIndex Som::findRestrictedBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, 
+	const int minBmuHits, const std::vector<double> &weights) const
 {
 	double minDist = this->euclidianWeightedDist(0, v, valid, weights);
 	int minIndex = 0;
@@ -227,14 +232,16 @@ SomIndex Som::findRestrictedBmu(Eigen::VectorXf v, std::vector<int> valid, int m
 }
 
 // Searches the neighbourhood of map starting from neuron lastBMU and returns index of neuron closest to v
-SomIndex Som::findLocalBmu(Eigen::VectorXf v, std::vector<int> valid, int lastBMU, std::vector<double> weights) const
+SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, 
+	const size_t &lastBMUref, const std::vector<double> &weights) const
 {
+	size_t lastBMU = lastBMUref;
 	double minDist = this->euclidianWeightedDist(lastBMU, v, valid, weights);
-	int minIndex = lastBMU;
+	size_t minIndex = lastBMU;
 	int firstSearchX[8] = {-1, 0, 1, 1, 1, 0, -1, -1};
 	int firstSearchY[8] = {1, 1, 1, 0, -1, -1, -1, 0};
 	
-	int lastMeasured = lastBMU;
+	size_t lastMeasured = lastBMU;
 	
 	int lastMeasuredX, lastMeasuredY, lastBMUX, lastBMUY;
 	
@@ -363,7 +370,8 @@ SomIndex Som::findLocalBmu(Eigen::VectorXf v, std::vector<int> valid, int lastBM
 }
 
 /*				find restricted Best Matching Distribution				*/
-std::vector<double> Som::findRestrictedBmd(Eigen::VectorXf v, std::vector<int> valid, int minBmuHits, std::vector<double> weights) const
+std::vector<double> Som::findRestrictedBmd(const Eigen::VectorXf &v, const std::vector<int> &valid, 
+	int minBmuHits, const std::vector<double> &weights) const
 {
 	std::vector<double> dist(height*width, -1);
 	
@@ -395,10 +403,10 @@ std::vector<double> Som::findRestrictedBmd(Eigen::VectorXf v, std::vector<int> v
 }
 
 // Evaluates mean error of a map with dataset data
-double Som::evaluate(const DataSet *data)
+double Som::evaluate(const DataSet *data) const
 {
 	double error = 0;
-	std::vector<int> val;
+	
 	auto bT = std::vector<float>(data->vectorLength());
 	auto cT = std::vector<float>(data->vectorLength());
 	auto tmp = std::vector<float>(data->vectorLength());
@@ -417,7 +425,7 @@ double Som::evaluate(const DataSet *data)
 	
 	for(size_t i = 0; i<data->size(); i++)
 	{
-		val = data->getValidity(i);
+		auto val = data->getValidity(i);
 		
 		for(size_t n = 0; n<data->vectorLength(); n++)
 		{
@@ -455,7 +463,7 @@ double Som::evaluate(const DataSet *data)
 	return error;
 }
 
-size_t Som::variationalAutoEncoder(const DataSet *data, int minBmuHits)
+size_t Som::variationalAutoEncoder(const DataSet *data, int minBmuHits) const
 {
 	std::vector<double> probability(getHeight()*getWidth(), 1/(double)(getHeight()*getWidth()));
 	
@@ -499,7 +507,7 @@ size_t Som::variationalAutoEncoder(const DataSet *data, int minBmuHits)
 	return modelVector;
 }
 
-int Som::autoEncoder(const DataSet *data, int minBmuHits)
+int Som::autoEncoder(const DataSet *data, int minBmuHits) const
 {
 	bool success = true;
 	
@@ -573,7 +581,7 @@ int Som::autoEncoder(const DataSet *data, int minBmuHits)
 //
 // In verbose mode. Print distances of all columns of all records with format:
 // COLUMN_NAME \t Record value \t Min of approved interval \t Max of approved interval
-int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
+int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits) const
 {
 	bool success = true;
 	float maxValue = -99999999;
@@ -702,50 +710,33 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 	return success;
 }
 
-// Trains on a single data point, i.e. a single record vector v is used to update the map weights with parameters valid, weights, eta, sigma and weightDecayFunction
-// lastBMU is the index of the BMU that this specific record found last epoch. It's used as a starting point if we're looking for a local BMU.
-SomIndex Som::trainSingle(Eigen::VectorXf v, std::vector<int> valid, std::vector<double> weights, double eta, double sigma, int *lastBMU, int weightDecayFunction)
+// Trains on a single data point, i.e. a single record vector v is used to update 
+// the map weights with parameters valid, weights, eta, sigma and weightDecayFunction
+// lastBMU is the index of the BMU that this specific record found last epoch. 
+// It's used as a starting point if we're looking for a local BMU.
+SomIndex Som::trainSingle(const Eigen::VectorXf &v, const std::vector<int> &valid, const std::vector<double> &weights, 
+	const double eta, const double sigma, size_t &lastBMU, const int weightDecayFunction)
 {
-	double tempWeight;
-	
-	SomIndex bmu(0,0);
-	
 	// Find best matching unit (bmu)
-	if( sigma > SIGMA_SWITCH_TO_LOCAL  )
+	const auto bmu = [this, sigma, v, valid, weights, lastBMU]()
 	{
-		bmu = findBmu(v, valid, weights);
-	}
-	else
-	{
-		bmu = findLocalBmu(v, valid, *lastBMU, weights);
-	}
+		return sigma > SIGMA_SWITCH_TO_LOCAL ? findBmu(v, valid, weights) : findLocalBmu(v, valid, lastBMU, weights);
+	}();
+
 	// Save last BMU to dataset
-	*lastBMU = bmu.getY()*width + bmu.getX();
+	lastBMU = bmu.getY() * width + bmu.getX();
 	
-	// Difference between bmu and current data
-	Eigen::VectorXf delta;
+	// Size of neighbourhood
+	// Only calculate new values within +- 2.5 standard deviations of neighbourhood
+	size_t startX = std::max( (int)(bmu.getX()-2.5*sigma), 0);
+	size_t startY = std::max( (int)(bmu.getY()-2.5*sigma), 0);
 	
-	// Weighted difference. Calculated for each neuron
-	Eigen::VectorXf tempV(delta.size());
+	size_t endX = std::min( (int)(bmu.getX()+2.5*sigma), (int)width);
+	size_t endY = std::min( (int)(bmu.getY()+2.5*sigma), (int)height);
 	
 	// Conversion array for conversion of vector<int> valid to Eigen::VectorXf validEigen
 	auto tmp = std::vector<float>(valid.size());
-	
-	// Size of neighbourhood
-	size_t startX, startY, endX, endY;
-	
-	// Strength of neighbourhood. Calculated for each neuron
-	double neighbourhood{1.0};
-	
-	// Only calculate new values within +- 2.5 standard deviations of neighbourhood
-	startX = std::max( (int)(bmu.getX()-2.5*sigma), 0);
-	startY = std::max( (int)(bmu.getY()-2.5*sigma), 0);
-	
-	endX = std::min( (int)(bmu.getX()+2.5*sigma), (int)width);
-	endY = std::min( (int)(bmu.getY()+2.5*sigma), (int)height);
-	
-	//std::cout << "BmuX: " << bmu.getX() << "\tBmuY: " << bmu.getY() << "\tstartX: " << startX << "\tStartY: " << startY << "\tendX: " << endX << "\tendY: " << endY << "\n";
-	
+
 	for(unsigned int i = 0; i<valid.size(); i++)
 	{
 		tmp[i] = (float)valid[i];
@@ -753,62 +744,70 @@ SomIndex Som::trainSingle(Eigen::VectorXf v, std::vector<int> valid, std::vector
 	Eigen::VectorXf validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp.data(), valid.size());
 	
 	
-	for(unsigned int j = startY; j < endY; j++)
+	for(size_t j = startY; j < endY; j++)
 	{
-		for(unsigned int i = startX; i < endX; i++)
+		for(size_t i = startX; i < endX; i++)
 		{
 			// Calculate delta vector
-			delta = ((v - map[j*width + i]).array()*validEigen.array()).matrix();
+			auto delta = ((v - map[j*width + i]).array()*validEigen.array()).matrix();
 			
-			// Calculate neighbourhood fundction
-			if( sigma > 1)
-			{
-				neighbourhood = (double)std::exp( -( (double)(i - (double)bmu.getX())*(double)(i - (double)bmu.getX())/(double)2/sigma/sigma + 
-											 (double)(j - (double)bmu.getY())*(double)(j - (double)bmu.getY())/(double)2/sigma/sigma ) );
-			}
-			
-			// If sigma is equal or smaller than 1, only update bmu with weight = 1 from neighbourhood function
-			else if( i == bmu.getX() && j == bmu.getY() )
-			{
-				neighbourhood = 1;
-			}
-			
-			//std::cout << "\tY0: " << j << "\tY: " << bmu.getY() << "\tX0: "  << i << "\tX: " << bmu.getX() << "\tsigma: " << sigma << "\tpart: " << (double)(i - (double)bmu.getX())*(double)(i - (double)bmu.getX())/(double)2/sigma/sigma << "\tG: " << neighbourhood << "\n";
+			// Strength of neighbourhood. Calculated for each neuron
+			auto neighbourhoodWeight = calculateNeighbourhoodWeight(i, j, bmu.getX(), bmu.getY(), sigma);
 			
 			/*	Ref.
 			* Incremental calculation of weighed mean and variance. Tony Finch. University of Cambrige Computing Service. February 2009.
 			* */
 			
-			// Update weights
-			tempV = (double)neighbourhood*eta*delta;
-			
 			// Exponential weight decay function
 			if(weightDecayFunction == 0)
 			{
-				weightMap[j*width + i] += (double)neighbourhood*eta;
-				map[j*width + i] += tempV;
+				weightMap[j*width + i] += neighbourhoodWeight*eta;
+				map[j*width + i] += neighbourhoodWeight*eta*delta;
 			}
 			// Inverse proportional weight decay function
 			else
 			{
-				weightMap[j*width + i] += (double)neighbourhood; // Equation 47
+				weightMap[j*width + i] += neighbourhoodWeight; // Equation 47
 				
 				// Protection against division by zero
-				tempWeight = weightMap[j*width + i] == 0 ? (double)1 : (double)neighbourhood/weightMap[j*width + i];
+				auto tempWeight = weightMap[j*width + i] == 0 ? 1.0 : neighbourhoodWeight/weightMap[j*width + i];
 				
 				map[j*width + i] += tempWeight*(v - map[j*width + i]); // Equation 53
 			}
 			
 			// Protection against division by zero
-			tempWeight = weightMap[j*width + i] == 0 ? 0.000001 : (double)weightMap[j*width + i];
+			auto tempWeight = weightMap[j*width + i] == 0 ? 0.000001 : weightMap[j*width + i];
 			
-			SMap[j*width + i] += neighbourhood*(delta.array()*(v - map[j*width + i]).array()).matrix(); // Equation 68
+			SMap[j*width + i] += neighbourhoodWeight*(delta.array()*(v - map[j*width + i]).array()).matrix(); // Equation 68
 			sigmaMap[j*width + i] = (SMap[j*width + i].array()/tempWeight).abs().sqrt().matrix(); // Equation 69
 			
 		}
 	}
 	// Return best matching unit
 	return bmu;
+}
+
+double Som::calculateNeighbourhoodWeight(
+	const size_t &currentX, const size_t &currentY, 
+	const size_t &bmuX, const size_t &bmuY, 
+	const double &currentSigma)
+{
+	// Calculate neighbourhood fundction
+	if (currentSigma > 1)
+	{
+		return std::exp(-((double)(currentX - (double)bmuX) * (double)(currentX - (double)bmuX) / (double)2 / currentSigma / currentSigma +
+						  (double)(currentY - (double)bmuY) * (double)(currentY - (double)bmuY) / (double)2 / currentSigma / currentSigma));
+	}
+
+	// If sigma is equal or smaller than 1, only update bmu with weight = 1 from neighbourhood function
+	else if (currentX == bmuX && currentY == bmuY)
+	{
+		return 1.0;
+	}
+	else
+	{
+		return 0.0;
+	}
 }
 
 void Som::randomInitialize(int seed, float sigma)
@@ -964,7 +963,7 @@ void Som::addBmu(SomIndex pos)
 	bmuHits[this->getIndex(pos)] += 1;
 }
 
-void Som::displayUMatrix()
+void Som::displayUMatrix() const
 {
 	std::cout << "\nU-matrix:\n[";
 	for(unsigned int i = 0; i < height; i++)
@@ -979,7 +978,7 @@ void Som::displayUMatrix()
 }
 
 // The SOM is saved in an octave/matlab friendly file that holds all variables needed to analyze what's been learned in octave/matlab
-void Som::save(const char *fileName)
+void Som::save(const char *fileName) const
 {
 	FILE *fp;
 	

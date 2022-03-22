@@ -48,7 +48,7 @@ void DataBase::close()
 	sqlite3_close(db);
 }
 
-int DataBase::getRecord(char *buff[], int row, std::string icanName)
+int DataBase::getRecord(char *buff[], int row, std::string icanName) const
 {
 	return 0;
 }

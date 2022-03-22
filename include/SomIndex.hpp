@@ -1,14 +1,16 @@
+#include <stddef.h>
+
 class SomIndex
 {
 	protected:
-		int x,y;
+		size_t x,y;
 	
 	public:
-		SomIndex(int, int);
+		SomIndex(size_t, size_t);
 		~SomIndex() = default;
 		//int getSomIndex(Som);
-		unsigned int getX() const;
-		unsigned int getY() const;
-		void setX(int);
-		void setY(int);
+		size_t getX() const;
+		size_t getY() const;
+		void setX(size_t);
+		void setY(size_t);
 };

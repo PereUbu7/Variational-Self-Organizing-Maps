@@ -11,7 +11,7 @@
 #define VERSION 1.00
 
 #define ARG_VERBOSE 1
-#define ARG_SETTING 2 
+#define ARG_SETTING 2
 
 #define ARG_DB_FILE 3
 #define ARG_SOM_FILE 4
@@ -35,46 +35,59 @@
 
 class Som
 {
-	protected:
-		std::vector<Eigen::VectorXf> map;
-		std::vector<Eigen::VectorXf> sigmaMap;
-		std::vector<Eigen::VectorXf> SMap;
-		Eigen::VectorXf weightMap;
-		std::vector<int> bmuHits;
-		std::vector<double> uMatrix;
-		unsigned int height, width;
-		bool _verbose;
-	
+protected:
+	std::vector<Eigen::VectorXf> map;
+	std::vector<Eigen::VectorXf> sigmaMap;
+	std::vector<Eigen::VectorXf> SMap;
+	Eigen::VectorXf weightMap;
+	std::vector<int> bmuHits;
+	std::vector<double> uMatrix;
+	size_t height, width;
+	bool _verbose;
+
 	// Lägg till att ta hänsyn till validitet i functionerna som nu tar del av den variabeln
-	public:
-		Som(size_t, size_t, size_t, bool verbose = false);
-		Som(const char*, bool verbose = false);
-		~Som() = default;
-		void train(DataSet*, int, double, double, double, double, int);
-		double evaluate(const DataSet*);
-		SomIndex trainSingle(Eigen::VectorXf, std::vector<int>, std::vector<double>, double, double, int*, int);
-		int measureSimilarity(const DataSet*, int, int);
-		int autoEncoder(const DataSet*, int);
-		size_t variationalAutoEncoder(const DataSet*, int);
-		SomIndex findBmu(Eigen::VectorXf, std::vector<int>, std::vector<double>) const;
-		SomIndex findLocalBmu(Eigen::VectorXf, std::vector<int>, int, std::vector<double>) const;
-		SomIndex findRestrictedBmu(Eigen::VectorXf, std::vector<int>, int, std::vector<double>) const;
-		std::vector<double> findRestrictedBmd(Eigen::VectorXf, std::vector<int>, int, std::vector<double>) const;
-		double euclidianWeightedDist(SomIndex, Eigen::VectorXf, std::vector<int>, std::vector<double>) const;
-		double euclidianWeightedDist(int pos, Eigen::VectorXf, std::vector<int>, std::vector<double>) const;
-		void display() const;
-		void displayUMatrix();
-		unsigned int getHeight() const;
-		unsigned int getWidth() const;
-		unsigned int getIndex(SomIndex) const;
-		Eigen::VectorXf getNeuron(SomIndex) const;
-		Eigen::VectorXf getNeuron(int) const;
-		Eigen::VectorXf getSigmaNeuron(SomIndex) const;
-		Eigen::VectorXf getSigmaNeuron(int) const;
-		void randomInitialize(int, float);
-		void addBmu(SomIndex);
-		void updateUMatrix(const DataSet *data);
-		void save(const char*);
-		void load(const char*);
-		Eigen::VectorXf getSizeFromFile(const char*);
+public:
+	Som(size_t, size_t, size_t, bool verbose = false);
+	Som(const char *, bool verbose = false);
+	~Som() = default;
+	void train(DataSet *, int, double, double, double, double, int);
+	double evaluate(const DataSet *) const;
+	SomIndex trainSingle(const Eigen::VectorXf&, const std::vector<int>&, const std::vector<double>&, const double, const double, size_t &, const int);
+	int measureSimilarity(const DataSet *, int, int) const;
+	int autoEncoder(const DataSet *, int) const;
+	size_t variationalAutoEncoder(const DataSet *, int) const;
+	SomIndex findBmu(const Eigen::VectorXf&, const std::vector<int>&, const std::vector<double>&) const;
+	SomIndex findLocalBmu(const Eigen::VectorXf&, const std::vector<int>&, const size_t&, const std::vector<double>&) const;
+	SomIndex findRestrictedBmu(const Eigen::VectorXf&, const std::vector<int>&, const int, const std::vector<double>&) const;
+	std::vector<double> findRestrictedBmd(const Eigen::VectorXf&, const std::vector<int>&, int, const std::vector<double>&) const;
+	double euclidianWeightedDist(
+		const SomIndex&, 
+		const Eigen::VectorXf&, 
+		const std::vector<int>&, 
+		const std::vector<double>&) const;
+	double euclidianWeightedDist(
+		const size_t &pos, 
+		const Eigen::VectorXf&, 
+		const std::vector<int>&, 
+		const std::vector<double>&) const;
+	void display() const;
+	void displayUMatrix() const;
+	unsigned int getHeight() const;
+	unsigned int getWidth() const;
+	unsigned int getIndex(SomIndex) const;
+	Eigen::VectorXf getNeuron(SomIndex) const;
+	Eigen::VectorXf getNeuron(size_t) const;
+	Eigen::VectorXf getSigmaNeuron(SomIndex) const;
+	Eigen::VectorXf getSigmaNeuron(size_t) const;
+	void randomInitialize(int, float);
+	void addBmu(SomIndex);
+	void updateUMatrix(const DataSet *data);
+	void save(const char *) const;
+	void load(const char *);
+	Eigen::VectorXf getSizeFromFile(const char *);
+
+	double static calculateNeighbourhoodWeight(
+		const size_t &currentX, const size_t &currentY,
+		const size_t &bmuX, const size_t &bmuY,
+		const double &currentSigma);
 };

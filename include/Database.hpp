@@ -15,7 +15,7 @@ class DataBase
 		void close();
 		int getElement(char*, int, std::string);
 		int getMax(char*, std::string);
-		int getRecord(char*[], int, std::string);
+		int getRecord(char*[], int, std::string) const;
 		int rows();
 		int minId();
 		int maxId();

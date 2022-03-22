@@ -68,14 +68,16 @@ DataSet::DataSet(const char *fileName, bool verbose)
 	
 }
 
-Eigen::VectorXf DataSet::getData(int n) const
+Eigen::VectorXf DataSet::getData(size_t index) const
 {
-	return data[n];
+	assert(n > index);
+	return data[index];
 }
 
-std::vector<int> DataSet::getValidity(int n) const
+std::vector<int> DataSet::getValidity(size_t index) const
 {
-	return valid[n];
+	assert(n > index);
+	return valid[index];
 }
 
 std::vector<int> DataSet::getBinary() const
@@ -88,14 +90,16 @@ std::vector<int> DataSet::getContinuous() const
 	return continuous;
 }
 
-int *DataSet::getLastBMU(int n)
+size_t &DataSet::getLastBMU(size_t index)
 {
-	return &lastBMU[n];
+	assert(n > index);
+	return lastBMU[index];
 }
 
-std::string DataSet::getName(int n) const
+std::string DataSet::getName(size_t index) const
 {
-	return variableNames[n];
+	assert(depth > index);
+	return variableNames[index];
 }
 
 std::vector<double> DataSet::getWeights() const

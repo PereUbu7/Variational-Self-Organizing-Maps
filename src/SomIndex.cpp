@@ -1,10 +1,9 @@
 #include "SomIndex.hpp"
 
-SomIndex::SomIndex(int inX = 0, int inY = 0)
-{
-	x = inX;
-	y = inY;
-}
+SomIndex::SomIndex(size_t inX = 0, size_t inY = 0) :
+	x{inX},
+	y{inY}
+{}
 
 /*
 int SomIndex::getSomIndex(Som map)
@@ -13,22 +12,22 @@ int SomIndex::getSomIndex(Som map)
 }
 */
 
-unsigned int SomIndex::getX() const
+size_t SomIndex::getX() const
 {
 	return x;
 }
 
-unsigned int SomIndex::getY() const
+size_t SomIndex::getY() const
 {
 	return y;
 }
 
-void SomIndex::setX(int ix)
+void SomIndex::setX(size_t ix)
 {
 	x = ix;
 }
 
-void SomIndex::setY(int iy)
+void SomIndex::setY(size_t iy)
 {
 	y = iy;
 }
