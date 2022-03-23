@@ -264,7 +264,7 @@ SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const std::vector<int> &val
 		// If first try
 		if( lastMeasured == lastBMU )
 		{
-			for(int i = 0; i < 8; i++)
+			for(int i = 0; i < 8; ++i)
 			{
 				currentX = std::max((int)std::min(lastMeasuredX + firstSearchX[i], (int)width-1), 0);
 				currentY = std::max((int)std::min(lastMeasuredY + firstSearchY[i], (int)height-1), 0);
@@ -280,9 +280,7 @@ SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const std::vector<int> &val
 			// If BMU has not changed. Do no more
 			if( minIndex == lastBMU )
 			{
-				success = true;
-				SomIndex returnIndex(minIndex % width, minIndex / width);
-				return returnIndex;
+				return SomIndex{minIndex % width, minIndex / width};
 			}
 			else
 			{
@@ -295,7 +293,7 @@ SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const std::vector<int> &val
 			// If we are moving in X direction
 			if( lastMeasuredX - lastBMUX )
 			{
-				for(int i = -1; i < 2; i++)
+				for(int i = -1; i < 2; ++i)
 				{
 					currentX = std::max((int)std::min(lastMeasuredX + lastMeasuredX - lastBMUX, (int)width-1), 0);
 					currentY = std::max((int)std::min(( lastMeasuredY + i ), (int)height-1), 0);
@@ -330,7 +328,7 @@ SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const std::vector<int> &val
 					startX = -1;
 					endX = 1;
 				}
-				for(int i = startX; i < (endX + 1); i++)
+				for(int i = startX; i < (endX + 1); ++i)
 				{
 					currentX = std::max((int)std::min(( lastMeasuredX + i ), (int)width-1), 0);
 					currentY = std::max((int)std::min(lastMeasuredY + lastMeasuredY - lastBMUY, (int)height-1), 0);
@@ -349,9 +347,7 @@ SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const std::vector<int> &val
 			// If BMU did not change since last try, do no more
 			if( minIndex == lastMeasured )
 			{
-				success = true;
-				SomIndex returnIndex(minIndex % width, minIndex / width);
-				return returnIndex;
+				return SomIndex{minIndex % width, minIndex / width};
 			}
 			// Otherwise update BMUs
 			else
@@ -362,9 +358,7 @@ SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const std::vector<int> &val
 		}
 	}
 	
-	SomIndex returnIndex(minIndex % width, minIndex / width);
-	
-	return returnIndex;
+	return SomIndex{minIndex % width, minIndex / width};
 }
 
 /*				find restricted Best Matching Distribution				*/
