@@ -932,23 +932,20 @@ void Som::updateUMatrix(const DataSet *data)
 }
 
 // Loops through the data set for numberOfEpochs turns while changing eta and sigma accordingly and updates map weights on each turn by calling trainSingle
-void Som::train(DataSet *data, int numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, int weightDecayFunction)
-{
-	SomIndex pos(0,0);
-	double sigma = sigma0, eta = eta0;
-	
-	for(int i = 0; i < numberOfEpochs; i++)
+void Som::train(DataSet *data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, int weightDecayFunction)
+{	
+	for(size_t i = 0; i < numberOfEpochs; ++i)
 	{
-		eta = eta0*std::exp(-etaDecay*i);
-		sigma = sigma0*std::exp(-sigmaDecay*i);
+		auto eta = eta0*std::exp(-etaDecay*i);
+		auto sigma = sigma0*std::exp(-sigmaDecay*i);
 		
-		if(sigma < 1) sigma = 1;
+		if(sigma < 1.0) sigma = 1.0;
 		
 		std::cout << "Epoch: " << i+1 << "/" << numberOfEpochs << "\teta: " << eta << "\tsigma: " << sigma << "\n";
 		
-		for(unsigned int j = 0; j < data->size(); j++)
+		for(size_t j = 0; j < data->size(); ++j
 		{
-			pos = trainSingle(data->getData(j), data->getValidity(j), data->getWeights(), eta, sigma, data->getLastBMU(j), weightDecayFunction);
+			auto pos = trainSingle(data->getData(j), data->getValidity(j), data->getWeights(), eta, sigma, data->getLastBMU(j), weightDecayFunction);
 			
 			addBmu(pos);
 			if( ( data->size() > 100 && (j % (int)(data->size()/100)) == 0 ) || data->size() < 100 )
