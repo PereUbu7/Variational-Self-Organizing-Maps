@@ -14,36 +14,37 @@ DataSet::DataSet(const char *fileName, bool verbose)
 	bool b = false;
 	double w = 1;
 	char *ptr;
-	
+
 	depth = 0;
-	
-	if(_verbose) std::cout << "Opening: " << fileName << "\n";
-	
+
+	if (_verbose)
+		std::cout << "Opening: " << fileName << "\n";
+
 	inFile.open(fileName);
-	
-	while(std::getline(inFile, tempLine))
+
+	while (std::getline(inFile, tempLine))
 	{
 		std::istringstream iline(tempLine);
-		
+
 		b = false;
 		c = 0;
-		while(std::getline(iline, token, '\t'))
+		while (std::getline(iline, token, '\t'))
 		{
 			// Extract first column; database column name
-			if( isalnum(token[0]) && c == 0 )
+			if (isalnum(token[0]) && c == 0)
 				name = token;
 			// Extract second column; database column weight
-			else if( c > 0 )
+			else if (c > 0)
 			{
 				w = strtod(token.c_str(), &ptr);
-				
+
 				// If not a number, set weight to 1
-				if(*ptr)
+				if (*ptr)
 				{
 					w = 1;
-					if( token.compare("binary") == 0 )
+					if (token.compare("binary") == 0)
 					{
-						//std::cout << name << " is treated as a binary variable.\n";
+						// std::cout << name << " is treated as a binary variable.\n";
 						b = true;
 					}
 				}
@@ -55,17 +56,15 @@ DataSet::DataSet(const char *fileName, bool verbose)
 		continuous.push_back(!b);
 		weight.push_back(w);
 		w = 1;
-		//std::cout << variableNames.back() << "\tWeight:" << weight.back() << "\tBinary:" << binary.back() << "\n";
+		// std::cout << variableNames.back() << "\tWeight:" << weight.back() << "\tBinary:" << binary.back() << "\n";
 	}
-	
-	
+
 	inFile.close();
-	
+
 	depth = variableNames.size();
-	
-	
-	if(_verbose) std::cout << "Dataset depth: " << depth <<"\n";
-	
+
+	if (_verbose)
+		std::cout << "Dataset depth: " << depth << "\n";
 }
 
 Eigen::VectorXf DataSet::getData(size_t index) const
@@ -114,7 +113,7 @@ size_t DataSet::size() const
 
 void DataSet::addVector(Eigen::VectorXf v)
 {
-	if( static_cast<size_t>(v.rows()) == depth )
+	if (static_cast<size_t>(v.rows()) == depth)
 	{
 		data.push_back(v);
 		n += 1;
@@ -123,11 +122,12 @@ void DataSet::addVector(Eigen::VectorXf v)
 		std::cout << "Added vector size does not correspond to data set depth!\n";
 }
 
-void DataSet::addSet(DataSet d)
+void DataSet::addSet(const DataSet &d)
 {
-	if( d.size() == n )
+	if (d.vectorLength() == depth)
 	{
-		for(size_t i = 0; i < d.size(); i++)
+		data.reserve(n + d.size());
+		for (size_t i = 0; i < d.size(); ++i)
 		{
 			data.push_back(d.getData(i));
 			n += 1;
@@ -137,74 +137,77 @@ void DataSet::addSet(DataSet d)
 		std::cout << "Data set depths do not correspond!\n";
 }
 
-
 void DataSet::loadDataBase(DataBase *db)
 {
-	char valueBuffer[20];
-	char *ptr;
-	int numberOfRows = db->rows();
-	int currentRow = 0;
-	
+	const int numberOfRows = db->rows();
 	
 	// Create template vector for whole data set
-	Eigen::VectorXf initV(depth);
-	
+	const Eigen::VectorXf initV(depth);
+
 	// Initialize new element of outer list
-	valid.resize(numberOfRows, std::vector<int>(depth, 0) );
-	
+	valid.resize(numberOfRows, std::vector<int>(depth, 0));
+
 	data.resize(numberOfRows, initV);
-	
+
 	lastBMU.resize(numberOfRows, 0);
-	
+
 	// Shuffle indices for data and valid maps
 	index.resize(numberOfRows);
-	for( size_t k = 0; k<index.size(); k++)
+	for (size_t k = 0; k < index.size(); ++k)
 		index[k] = k;
 	shuffle();
-	
+
 	n = numberOfRows;
-	
+
 	db->startTransaction();
-	
-	if(_verbose) std::cout << "Min:" << db->minId() << "\tMax:" << db->maxId() << "\n";
-	
+
+	if (_verbose)
+		std::cout << "Min:" << db->minId() << "\tMax:" << db->maxId() << "\n";
+
 	// Loop over all records in the entire database
-	for(int r = db->minId(); r < db->maxId() + 1; r++)
+	for (int currentRow = 0, r = db->minId(); r < db->maxId() + 1; ++r)
 	{
 		// Loop over all columns of record
-		for(size_t i = 0; i < depth; i++)
+		for (size_t i = 0; i < depth; i++)
 		{
-				if( db->doesExist(r) )
-					db->getElement(valueBuffer, r, variableNames[i]);
-				else
-				{
-					i--;
-					r++;
-					continue;
-				}
-				// Save dataset with shuffled indices in data and valid
-				if( valueBuffer[0] == '\0' || strcmp(valueBuffer, "NULL") == 0 )
-				{
-					data[index[currentRow]](i) = 0;
-					valid[index[currentRow]][i] = 0;
-				}
-				else
-				{
-					// Save dataset with shuffled indices in data and valid
-					data[index[currentRow]](i) = strtod(valueBuffer, &ptr);
-					valid[index[currentRow]][i] = 1;
-				}
+			char valueBuffer[20];
 
+			if (db->doesExist(r))
+				db->getElement(valueBuffer, r, variableNames[i]);
+			else
+			{
+				--i;
+				++r;
+				continue;
+			}
+			// Save dataset with shuffled indices in data and valid
+			if (valueBuffer[0] == '\0' || strcmp(valueBuffer, "NULL") == 0)
+			{
+				data[index[currentRow]](i) = 0;
+				valid[index[currentRow]][i] = 0;
+			}
+			else
+			{
+				// Save dataset with shuffled indices in data and valid
+				char *ptr;
+				data[index[currentRow]](i) = strtod(valueBuffer, &ptr);
+				valid[index[currentRow]][i] = 1;
+			}
 		}
-		currentRow++;
-		
-		if( ( ( (db->maxId()-db->minId()) > 100 && (r % (int)((db->maxId()-db->minId())/100)) == 0 ) || (db->maxId()-db->minId()) < 100 ) && _verbose )
+		++currentRow;
+
+		if ((((db->maxId() - db->minId()) > 100 
+			&& (r % (int)((db->maxId() - db->minId()) / 100)) == 0) 
+			|| (db->maxId() - db->minId()) < 100) 
+			&& _verbose)
 		{
-			if(_verbose) std::cout << "\rLoading database:" << 100*r/(db->maxId()-db->minId()) << "%";
+			if (_verbose)
+				std::cout << "\rLoading database:" << 100 * r / (db->maxId() - db->minId()) << "%";
 		}
 	}
-	if(_verbose) std::cout << "\rLoading database:100%\n";
-	
+	if (_verbose)
+		std::cout << "\rLoading database:100%\n";
+
 	db->endTransaction();
 }
 
@@ -226,84 +229,84 @@ void DataSet::loadTextFile(const char *fileName)
 		icanIndex = 0;
 	size_t vectorElement = 0;
 	double tempValue;
-	
-	if( (fp = fopen(fileName, "r")) == NULL )
+
+	if ((fp = fopen(fileName, "r")) == NULL)
 	{
 		std::cout << "Couldn't open file " << fileName << ". Quitting...\n";
 		exit(EXIT_FAILURE);
 	}
-	
+
 	// Load complete file
-	while( (ch = fgetc(fp)) != EOF )
+	while ((ch = fgetc(fp)) != EOF)
 		lineString.push_back(ch);
-	
+
 	// Count number of lines
-	for(unsigned int i = 0; i < lineString.size(); i++)
+	for (unsigned int i = 0; i < lineString.size(); i++)
 	{
-		if( lineString[i] == '\n' )
+		if (lineString[i] == '\n')
 		{
 			numberOfNewlines += 1;
 			maxNumberOfColumns = numberOfColumns > maxNumberOfColumns ? numberOfColumns : maxNumberOfColumns;
 			minNumberOfColumns = numberOfColumns < minNumberOfColumns ? numberOfColumns : minNumberOfColumns;
 			numberOfColumns = 0;
 		}
-		else if( lineString[i] == '\t' )
+		else if (lineString[i] == '\t')
 			numberOfColumns++;
 	}
-	
-	if(_verbose) std::cout << fileName << ": File size: " << lineString.size() << "\nNumber of lines: " << numberOfNewlines << "\nBiggest depth: " << maxNumberOfColumns << "\nSmallest depth: " << minNumberOfColumns << "\n";
-	
+
+	if (_verbose)
+		std::cout << fileName << ": File size: " << lineString.size() << "\nNumber of lines: " << numberOfNewlines << "\nBiggest depth: " << maxNumberOfColumns << "\nSmallest depth: " << minNumberOfColumns << "\n";
+
 	nextColumn = &lineString[0];
-	
+
 	// Parse loaded file
-	while( i < numberOfNewlines )
+	while (i < numberOfNewlines)
 	{
 		// Skip first line if commented with leading '#'
-		if( lineString[0] == '#' && i == 0)
+		if (lineString[0] == '#' && i == 0)
 		{
 			int j = 1;
 			i++;
-			
+
 			do
 			{
 				j++;
-			} while( lineString[j] != '\n' );
-			
+			} while (lineString[j] != '\n');
+
 			nextColumn = &lineString[j];
 		}
 		tempValue = strtod(nextColumn, &ptr);
-		
+
 		nextColumn = ptr;
-		
-		//std::cout << "vector element: " << vectorElement << "\ticanIndex: " << icanIndex << "\tptr: " << (char)*(ptr+1) << " value: " << tempValue  << "\n";
-		
-		
+
+		// std::cout << "vector element: " << vectorElement << "\ticanIndex: " << icanIndex << "\tptr: " << (char)*(ptr+1) << " value: " << tempValue  << "\n";
+
 		/* HÄR ÄR JAG OCH KRÅNGLAR JUST NU!!!!
 		 * ----------------------------------*/
-		if( ( std::isdigit(*(ptr+1)) || *(ptr+1) == '-' ) && vectorElement < depth /*&& filter[icanIndex]*/ )
+		if ((std::isdigit(*(ptr + 1)) || *(ptr + 1) == '-') && vectorElement < depth /*&& filter[icanIndex]*/)
 		{
 			tempData[vectorElement] = tempValue;
 			vectorElement++;
 			icanIndex++;
 		}
-		else if( ( std::isdigit(*(ptr+1)) || *(ptr+1) == '-' ) && vectorElement < depth )
+		else if ((std::isdigit(*(ptr + 1)) || *(ptr + 1) == '-') && vectorElement < depth)
 		{
 			icanIndex++;
 		}
-		else if( *(ptr+1) == '\n' )
+		else if (*(ptr + 1) == '\n')
 		{
 			this->addVector(tempData);
-			//std::cout << "vector size: " << vectorElement << "\n";
+			// std::cout << "vector size: " << vectorElement << "\n";
 			vectorElement = 0;
 			icanIndex = 0;
 			i++;
 		}
 		else
 		{
-			//std::cout << "Omitting ican index " << icanIndex << "\n";
+			// std::cout << "Omitting ican index " << icanIndex << "\n";
 			icanIndex++;
-			//std::cout << "File " << fileName << " and data set depths do not correspond. Quitting...\n";
-			//exit(EXIT_FAILURE);
+			// std::cout << "File " << fileName << " and data set depths do not correspond. Quitting...\n";
+			// exit(EXIT_FAILURE);
 		}
 	}
 }

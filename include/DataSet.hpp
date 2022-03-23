@@ -32,7 +32,7 @@ public:
 		size_t &getLastBMU(size_t);
 		size_t size() const;
 		void addVector(Eigen::VectorXf);
-		void addSet(DataSet d);
+		void addSet(const DataSet &d);
 		void loadTextFile(const char*);
 		void display() const;
 		void loadDataBase(DataBase *db);
