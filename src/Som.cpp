@@ -188,10 +188,10 @@ Eigen::VectorXf Som::getSigmaNeuron(size_t i) const
 // Only considers valid dimensions with weights
 SomIndex Som::findBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, const std::vector<double> &weights) const
 {
-	double minDist = this->euclidianWeightedDist(0, v, valid, weights);
+	auto minDist = this->euclidianWeightedDist(0, v, valid, weights);
 	int minIndex = 0;
 	
-	for(unsigned int i = 0; i < height*width; i++)
+	for(size_t i = 0; i < height*width; ++i)
 	{
 		double currentDist;
 		if( (currentDist = this->euclidianWeightedDist(i, v, valid, weights)) < minDist )
@@ -212,10 +212,10 @@ SomIndex Som::findBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, c
 SomIndex Som::findRestrictedBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, 
 	const int minBmuHits, const std::vector<double> &weights) const
 {
-	double minDist = this->euclidianWeightedDist(0, v, valid, weights);
+	auto minDist = this->euclidianWeightedDist(0, v, valid, weights);
 	int minIndex = 0;
 	
-	for(unsigned int i = 0; i < height*width; i++)
+	for(size_t i = 0; i < height*width; ++i)
 	{
 		double currentDist;
 		if( (currentDist = this->euclidianWeightedDist(i, v, valid, weights)) < minDist && bmuHits[i] >= minBmuHits )
@@ -361,8 +361,6 @@ SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const std::vector<int> &val
 			}
 		}
 	}
-	
-	
 	
 	SomIndex returnIndex(minIndex % width, minIndex / width);
 	
@@ -943,7 +941,7 @@ void Som::train(DataSet *data, size_t numberOfEpochs, double eta0, double etaDec
 		
 		std::cout << "Epoch: " << i+1 << "/" << numberOfEpochs << "\teta: " << eta << "\tsigma: " << sigma << "\n";
 		
-		for(size_t j = 0; j < data->size(); ++j
+		for(size_t j = 0; j < data->size(); ++j)
 		{
 			auto pos = trainSingle(data->getData(j), data->getValidity(j), data->getWeights(), eta, sigma, data->getLastBMU(j), weightDecayFunction);
 			
