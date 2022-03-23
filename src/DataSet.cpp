@@ -6,56 +6,52 @@
 DataSet::DataSet(const char *fileName, bool verbose)
 {
 	_verbose = verbose;
-	std::ifstream inFile;
-	std::string tempLine;
-	std::string token;
-	std::string name;
-	int c = 0;
-	bool b = false;
-	double w = 1;
-	char *ptr;
-
-	depth = 0;
 
 	if (_verbose)
 		std::cout << "Opening: " << fileName << "\n";
 
+	std::ifstream inFile;
 	inFile.open(fileName);
 
+	std::string tempLine;
+	int currentColumn = 0;
 	while (std::getline(inFile, tempLine))
 	{
 		std::istringstream iline(tempLine);
 
-		b = false;
-		c = 0;
+		std::string token;
+		std::string name{};
+		double parsedValue = 1.0;
+		bool isBinary = false;
 		while (std::getline(iline, token, '\t'))
 		{
 			// Extract first column; database column name
-			if (isalnum(token[0]) && c == 0)
+			if (isalnum(token[0]) && currentColumn == 0)
 				name = token;
 			// Extract second column; database column weight
-			else if (c > 0)
+			else if (currentColumn > 0)
 			{
-				w = strtod(token.c_str(), &ptr);
+				char *ptr;
+				parsedValue = strtod(token.c_str(), &ptr);
 
 				// If not a number, set weight to 1
 				if (*ptr)
 				{
-					w = 1;
+					parsedValue = 1.0;
 					if (token.compare("binary") == 0)
 					{
 						// std::cout << name << " is treated as a binary variable.\n";
-						b = true;
+						isBinary = true;
 					}
 				}
 			}
-			c++;
+			++currentColumn;
 		}
 		variableNames.push_back(name);
-		binary.push_back(b);
-		continuous.push_back(!b);
-		weight.push_back(w);
-		w = 1;
+		binary.push_back(isBinary);
+		continuous.push_back(!isBinary);
+		weight.push_back(parsedValue);
+		parsedValue = 1;
 		// std::cout << variableNames.back() << "\tWeight:" << weight.back() << "\tBinary:" << binary.back() << "\n";
 	}
 
