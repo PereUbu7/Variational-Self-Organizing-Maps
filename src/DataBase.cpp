@@ -57,10 +57,13 @@ int DataBase::startTransaction()
 {
 	char *err_msg;
 	int retValue{};
-	if( (retValue = sqlite3_exec(db, "BEGIN;", NULL, NULL, &err_msg)) )
+	retValue = sqlite3_exec(db, "BEGIN;", NULL, NULL, &err_msg);
+	if ( err_msg ) 
 	{
-		fprintf(stderr, "Failed to BEGIN transaction: %s\n", sqlite3_errmsg(db));
-	}
+		fprintf(stderr, "Failed to BEGIN transaction: Error message:%s\n", err_msg);
+		sqlite3_free(err_msg);
+		return(-1);
+    }
 	return retValue;
 }
 
@@ -68,27 +71,30 @@ int DataBase::endTransaction()
 {
 	char *err_msg;
 	int retValue{};
-	if( (retValue = sqlite3_exec(db, "END;", NULL, NULL, &err_msg)) )
+	retValue = sqlite3_exec(db, "END;", NULL, NULL, &err_msg);
+	if ( err_msg ) 
 	{
-		fprintf(stderr, "Failed to END transaction: %s\n", sqlite3_errmsg(db));
-	}
+		fprintf(stderr, "Failed to END transaction: Error message:%s\n", err_msg);
+		sqlite3_free(err_msg);
+		return(-1);
+    }
 	return retValue;
 }
 
 int DataBase::getElement(char *buff, int row, std::string icanName)
 {
-	int rc;
 	char sql[200];
 	char *err_msg;
 	
 	sprintf(sql, "SELECT %s FROM Ican WHERE Id = '%d';", icanName.c_str(), row);
 	
 	// Exekvera SQL statement
-	rc = sqlite3_exec(db, sql, saveElement, buff, &err_msg);
+	sqlite3_exec(db, sql, saveElement, buff, &err_msg);
     
-    if (rc != SQLITE_OK ) 
+    if ( err_msg ) 
 	{
-		fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		fprintf(stderr, "Failed to execute statement: %s\nError message:%s\n", sql, err_msg);
+		sqlite3_free(err_msg);
 		return(-1);
     }
 	
@@ -97,18 +103,18 @@ int DataBase::getElement(char *buff, int row, std::string icanName)
 
 int DataBase::rows()
 {
-	int rc;
 	char *err_msg;
 	char sql[] = "SELECT COUNT(*) FROM Ican;";
 	char buff[50];
 	unsigned long value;
 	
 	// Exekvera SQL statement
-	rc = sqlite3_exec(db, sql, saveElement, buff, &err_msg);
+	sqlite3_exec(db, sql, saveElement, buff, &err_msg);
     
-    if (rc != SQLITE_OK ) 
+    if ( err_msg ) 
 	{
-		fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		fprintf(stderr, "Failed to execute statement: %s\nError message:%s\n", sql, err_msg);
+		sqlite3_free(err_msg);
 		return(-1);
     }
 	
@@ -119,18 +125,18 @@ int DataBase::rows()
 
 int DataBase::minId()
 {
-	int rc;
 	char *err_msg;
 	char sql[] = "SELECT MIN(Id) FROM Ican;";
 	char buff[50];
 	unsigned long value;
 	
 	// Exekvera SQL statement
-	rc = sqlite3_exec(db, sql, saveElement, buff, &err_msg);
+	sqlite3_exec(db, sql, saveElement, buff, &err_msg);
     
-    if (rc != SQLITE_OK ) 
+    if ( err_msg ) 
 	{
-		fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		fprintf(stderr, "Failed to execute statement: %s\nError message:%s\n", sql, err_msg);
+		sqlite3_free(err_msg);
 		return(-1);
     }
 	
@@ -141,18 +147,18 @@ int DataBase::minId()
 
 int DataBase::maxId()
 {
-	int rc;
 	char *err_msg;
 	char sql[] = "SELECT MAX(Id) FROM Ican;";
 	char buff[50];
 	unsigned long value;
 	
 	// Exekvera SQL statement
-	rc = sqlite3_exec(db, sql, saveElement, buff, &err_msg);
+	sqlite3_exec(db, sql, saveElement, buff, &err_msg);
     
-    if (rc != SQLITE_OK ) 
+    if ( err_msg ) 
 	{
-		fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		fprintf(stderr, "Failed to execute statement: %s\nError message:%s\n", sql, err_msg);
+		sqlite3_free(err_msg);
 		return(-1);
     }
 	
@@ -163,7 +169,6 @@ int DataBase::maxId()
 
 int DataBase::doesExist(int row)
 {
-	int rc;
 	char *err_msg;
 	char sql[200];
 	char buff[50];
@@ -172,11 +177,12 @@ int DataBase::doesExist(int row)
 	sprintf(sql, "SELECT COUNT(*) FROM Ican WHERE Id = \'%d\';", row);
 	
 	// Exekvera SQL statement
-	rc = sqlite3_exec(db, sql, saveElement, buff, &err_msg);
+	sqlite3_exec(db, sql, saveElement, buff, &err_msg);
     
-    if (rc != SQLITE_OK ) 
+    if ( err_msg ) 
 	{
-		fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		fprintf(stderr, "Failed to execute statement: %s\nError message:%s\n", sql, err_msg);
+		sqlite3_free(err_msg);
 		return(-1);
     }
 	
@@ -189,18 +195,18 @@ int DataBase::doesExist(int row)
 
 int DataBase::getMax(char *buff, std::string icanName)
 {
-	int rc;
 	char sql[200];
 	char *err_msg;
 	
 	sprintf(sql, "SELECT MAX(CAST(%s AS DECIMAL)) FROM Ican;", icanName.c_str());
 	
 	// Exekvera SQL statement
-	rc = sqlite3_exec(db, sql, saveElement, buff, &err_msg);
+	sqlite3_exec(db, sql, saveElement, buff, &err_msg);
     
-    if (rc != SQLITE_OK ) 
+    if ( err_msg ) 
 	{
-		fprintf(stderr, "Failed to execute statement: %s\n", sqlite3_errmsg(db));
+		fprintf(stderr, "Failed to execute statement: %s\nError message:%s\n", sql, err_msg);
+		sqlite3_free(err_msg);
 		return(-1);
     }
 	

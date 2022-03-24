@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <ctype.h>
 
 DataSet::DataSet(const char *fileName, bool verbose)
 {
@@ -14,9 +15,9 @@ DataSet::DataSet(const char *fileName, bool verbose)
 	inFile.open(fileName);
 
 	std::string tempLine;
-	int currentColumn = 0;
 	while (std::getline(inFile, tempLine))
 	{
+		int currentColumn = 0;
 		std::istringstream iline(tempLine);
 
 		std::string token;
@@ -26,7 +27,7 @@ DataSet::DataSet(const char *fileName, bool verbose)
 		while (std::getline(iline, token, '\t'))
 		{
 			// Extract first column; database column name
-			if (isalnum(token[0]) && currentColumn == 0)
+			if (std::isalnum(token[0]) && currentColumn == 0)
 				name = token;
 			// Extract second column; database column weight
 			else if (currentColumn > 0)
@@ -52,7 +53,7 @@ DataSet::DataSet(const char *fileName, bool verbose)
 		continuous.push_back(!isBinary);
 		weight.push_back(parsedValue);
 		parsedValue = 1;
-		// std::cout << variableNames.back() << "\tWeight:" << weight.back() << "\tBinary:" << binary.back() << "\n";
+		if(_verbose) std::cout << variableNames.back() << "\tWeight:" << weight.back() << "\tBinary:" << binary.back() << "\n";
 	}
 
 	inFile.close();
