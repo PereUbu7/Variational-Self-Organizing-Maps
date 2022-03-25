@@ -395,31 +395,31 @@ std::vector<double> Som::findRestrictedBmd(const Eigen::VectorXf &v, const std::
 }
 
 // Evaluates mean error of a map with dataset data
-double Som::evaluate(const DataSet *data) const
+double Som::evaluate(const DataSet &data) const
 {
 	double error = 0;
 	
-	auto bT = std::vector<float>(data->vectorLength());
-	auto cT = std::vector<float>(data->vectorLength());
-	auto tmp = std::vector<float>(data->vectorLength());
+	auto bT = std::vector<float>(data.vectorLength());
+	auto cT = std::vector<float>(data.vectorLength());
+	auto tmp = std::vector<float>(data.vectorLength());
 	Eigen::VectorXf binaryEigen;
 	Eigen::VectorXf validEigen;
 	Eigen::VectorXf binaryError;
 	Eigen::ArrayXf ones(map[0].size(), 1);
 	
-	for(size_t n = 0; n<data->vectorLength(); n++)
+	for(size_t n = 0; n<data.vectorLength(); n++)
 	{
-		bT[n] = (float)data->getBinary()[n];
-		cT[n] = (float)data->getContinuous()[n];
+		bT[n] = (float)data.getBinary()[n];
+		cT[n] = (float)data.getContinuous()[n];
 	}
 	
 	binaryEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(bT.data(), map[0].size());
 	
-	for(size_t i = 0; i<data->size(); i++)
+	for(size_t i = 0; i<data.size(); i++)
 	{
-		auto val = data->getValidity(i);
+		auto val = data.getValidity(i);
 		
-		for(size_t n = 0; n<data->vectorLength(); n++)
+		for(size_t n = 0; n<data.vectorLength(); n++)
 		{
 			tmp[n] = (float)val[n];
 			// Multiply valid vector with continuous vector in order to get valid times continious (all binary dimensions are = 0)
@@ -427,12 +427,12 @@ double Som::evaluate(const DataSet *data) const
 		}
 		
 		validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp.data(), map[0].size());
-		SomIndex bmu = this->findBmu(data->getData(i), val, data->getWeights());
+		SomIndex bmu = this->findBmu(data.getData(i), val, data.getWeights());
 		
-		binaryError = (((this->getNeuron(bmu).array().log()*data->getData(i).array())+((ones-this->getNeuron(bmu).array()).log()*(ones-data->getData(i).array())))).matrix();
+		binaryError = (((this->getNeuron(bmu).array().log()*data.getData(i).array())+((ones-this->getNeuron(bmu).array()).log()*(ones-data.getData(i).array())))).matrix();
 		
 		// Replace NaNs and Infs with something big
-		for(size_t n = 0; n<data->vectorLength(); n++)
+		for(size_t n = 0; n<data.vectorLength(); n++)
 		{
 			binaryError[n] = std::isnan(binaryError[n]) || std::isinf(binaryError[n]) ? -99999 : binaryError[n];
 		}
@@ -441,13 +441,13 @@ double Som::evaluate(const DataSet *data) const
 		 * Incremental calculation of weighed mean and variance. Tony Finch. University of Cambrige Computing Service. February 2009.
 		 * Equation 4
 		 * Mean of binaryError + continious error */
-		error += (double)1/(i+1)*( this->euclidianWeightedDist(bmu, data->getData(i), val, data->getWeights()) + std::sqrt(binaryError.dot(binaryError)) - error );
+		error += (double)1/(i+1)*( this->euclidianWeightedDist(bmu, data.getData(i), val, data.getWeights()) + std::sqrt(binaryError.dot(binaryError)) - error );
 		
 		//std::cout << "X:" << bmu.getX() << "\tY:" << bmu.getY() << "\tbinError:" << binaryError[6] << "\tv:" << data->getData(i)[6] << "\tmap:" << this->getNeuron(bmu)[6] << "\tbin?:" << binaryEigen[6] << "\tval?:" << validEigen[6] << "\n";
 		//std::cout << "\terror: " << error << "\ti+1:" << i+1 << "\tx_(i+1):" << this->euclidianWeightedDist(bmu, data->getData(i), val, data->getWeights()) << "\tbinary error:" << std::sqrt(binaryError.dot(binaryError)) << "\n";
 		
-		if( ( ( (data->size()) > 100 && (i % (int)((data->size())/100)) == 0 ) || (data->size()) < 100 ) && _verbose )
-			std::cout << "\rEvaluating dataset:" << 100*i/(data->size()) << "%";
+		if( ( ( (data.size()) > 100 && (i % (int)((data.size())/100)) == 0 ) || (data.size()) < 100 ) && _verbose )
+			std::cout << "\rEvaluating dataset:" << 100*i/(data.size()) << "%";
 	}
 	
 	if(_verbose) std::cout << "\rEvaluating dataset:100%\n";

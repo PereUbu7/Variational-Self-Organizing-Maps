@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 		if(verbose) test.display();
 		if(verbose) test.displayUMatrix();
 		
-		printf("Error on dataset: %f\n", test.evaluate(&devSet));
+		printf("Error on dataset: %f\n", test.evaluate(devSet));
 	}
 	else if( measuringSOM )
 	{

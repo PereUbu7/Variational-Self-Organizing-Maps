@@ -51,7 +51,7 @@ public:
 	Som(const char *, bool verbose = false);
 	~Som() = default;
 	void train(DataSet *, size_t, double, double, double, double, int);
-	double evaluate(const DataSet *) const;
+	double evaluate(const DataSet&) const;
 	SomIndex trainSingle(const Eigen::VectorXf&, const std::vector<int>&, const std::vector<double>&, const double, const double, size_t &, const int);
 	int measureSimilarity(const DataSet *, int, int) const;
 	int autoEncoder(const DataSet *, int) const;
