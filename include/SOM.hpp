@@ -57,6 +57,7 @@ public:
 	int autoEncoder(const DataSet *, int) const;
 	size_t variationalAutoEncoder(const DataSet *, int) const;
 	SomIndex findBmu(const Eigen::VectorXf&, const std::vector<int>&, const std::vector<double>&) const;
+	SomIndex findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const;
 	SomIndex findLocalBmu(const Eigen::VectorXf&, const std::vector<int>&, const size_t&, const std::vector<double>&) const;
 	SomIndex findRestrictedBmu(const Eigen::VectorXf&, const std::vector<int>&, const int, const std::vector<double>&) const;
 	std::vector<double> findRestrictedBmd(const Eigen::VectorXf&, const std::vector<int>&, int, const std::vector<double>&) const;
@@ -70,6 +71,11 @@ public:
 		const Eigen::VectorXf&, 
 		const std::vector<int>&, 
 		const std::vector<double>&) const;
+	double euclidianWeightedDist(
+		const size_t &pos, 
+		const Eigen::VectorXf &v, 
+		const Eigen::VectorXf &valid, 
+		const Eigen::VectorXf &weights) const;
 	void display() const;
 	void displayUMatrix() const;
 	unsigned int getHeight() const;

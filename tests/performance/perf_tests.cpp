@@ -102,24 +102,58 @@ namespace Perftests
 
             return (endTime - startTime) / numberOfRuns;
         };
+        template<size_t NumOfRuns>
         auto test_findBmu()
         {
             setup();
 
+
+            sut.randomInitialize(std::time(NULL), 1);
+            auto modelVector = Eigen::VectorXf::Random(100);
+            auto validityVector = Eigen::VectorXf::Ones(100);
+            auto weightVector = Eigen::VectorXf::Ones(100);
+
             auto startTime = high_resolution_clock::now();
-
-            sut.randomInitialize(1, 1);
-            auto modelVector = Eigen::VectorXf{100};
-            auto validityVector = std::vector<int>{100, 1};
-            auto weightVector = std::vector<double>{100, 1.0};
-
-            for (size_t i{0}; i < numberOfRuns; ++i)
+            
+            for (size_t i{0}; i < NumOfRuns; ++i)
                 sut.findBmu(modelVector, validityVector, weightVector);
 
             auto endTime = high_resolution_clock::now();
 
-            return (endTime - startTime) / numberOfRuns;
-        };
+            return endTime - startTime;
+        }
+        template<size_t NumOfRuns>
+        auto test_euclidianWeightedDist()
+        {
+            Eigen::MatrixXi m(1, 5);
+            m << 1, 2, 3, 4, 5;
+            m = (m.array() > 3).select(3, m);
+            std::cout << "output:" << m << '\n';
+
+            setup();
+
+            sut.randomInitialize(std::time(NULL), 1);
+
+            auto positions = std::array<size_t, NumOfRuns>();
+            for(auto& element : positions)
+                element = std::rand() % 100*100;
+
+            auto modelVector = Eigen::VectorXf(100);
+            auto validityVector = Eigen::VectorXf::Ones(100);
+            auto weightVector = Eigen::VectorXf::Ones(100);
+
+            double res = 0;
+
+            auto startTime = high_resolution_clock::now();
+            for (size_t i{0}; i < NumOfRuns; ++i)
+                res += sut.euclidianWeightedDist(positions[i], modelVector, validityVector, weightVector)/1000000;
+
+            auto endTime = high_resolution_clock::now();
+
+            std::cout << res << '\n';
+
+            return (endTime - startTime);
+        }
     };
 
 }
@@ -128,10 +162,11 @@ int main()
     using namespace Perftests;
     auto tester = SomTests{};
 
-    printResultToFile(tester.test_randomInitialize(), "Som::randomInitialize()");
-    printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 0), "Som::train(exponentialWeightDecay)");
-    printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 1), "Som::train(inverseProportionalWeightDecay)");
-    printResultToFile(tester.test_evaluate("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::evaluate()");
+    // printResultToFile(tester.test_randomInitialize(), "Som::randomInitialize()");
+    // printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 0), "Som::train(exponentialWeightDecay)");
+    // printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 1), "Som::train(inverseProportionalWeightDecay)");
+    // printResultToFile(tester.test_evaluate("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::evaluate()");
 
-    // printResultToFile(tester.test_findBmu(), "Som::findBmu()");
+    printResultToFile(tester.test_euclidianWeightedDist<1000000>(), "Som:euclidianWeightedDist() per milion");
+    printResultToFile(tester.test_findBmu<1000>(), "Som::findBmu() per thousand");
 }

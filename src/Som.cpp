@@ -145,7 +145,23 @@ double Som::euclidianWeightedDist(
 	// validEigen is an Eigen vector with weight if valid and 0 if not
 	validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp.data(), valid.size());
 	
-	// (pos-v)*(pos-v)*weight*valid/sigma
+	// (pos-v)*(pos-v)*weight*valid/sigma2
+	return  (((this->getNeuron(pos) - v).array()/sM).matrix().dot( ((this->getNeuron(pos) - v).array()*validEigen.array()/sM).matrix() ) );
+}
+
+double Som::euclidianWeightedDist(
+	const size_t &pos, const Eigen::VectorXf &v, 
+	const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const
+{
+	Eigen::ArrayXf sM(sigmaMap[pos].size());
+	Eigen::VectorXf validEigen;
+	
+	sM = (sigmaMap[pos].array() < 0.00001).select(0.00001, sigmaMap[pos]);
+
+	// validEigen is an Eigen vector with weight if valid and 0 if not
+	validEigen = valid.array()*weights.array();
+	
+	// (pos-v)*(pos-v)*weight*valid/sigma2
 	return  (((this->getNeuron(pos) - v).array()/sM).matrix().dot( ((this->getNeuron(pos) - v).array()*validEigen.array()/sM).matrix() ) );
 }
 
@@ -201,6 +217,25 @@ SomIndex Som::findBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, c
 		}
 	}
 	
+	SomIndex returnIndex(minIndex % width, minIndex / width );
+	
+	return returnIndex;
+}
+
+SomIndex Som::findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const
+{
+	auto minDist = this->euclidianWeightedDist(0, v, valid, weights);
+	int minIndex = 0;
+	
+	for(size_t i = 0; i < height*width; ++i)
+	{
+		double currentDist;
+		if( (currentDist = this->euclidianWeightedDist(i, v, valid, weights)) < minDist )
+		{
+			minDist = currentDist;
+			minIndex = i;
+		}
+	}
 	
 	SomIndex returnIndex(minIndex % width, minIndex / width );
 	
