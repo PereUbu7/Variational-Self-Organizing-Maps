@@ -107,7 +107,6 @@ namespace Perftests
         {
             setup();
 
-
             sut.randomInitialize(std::time(NULL), 1);
             auto modelVector = Eigen::VectorXf::Random(100);
             auto validityVector = Eigen::VectorXf::Ones(100);
@@ -125,11 +124,6 @@ namespace Perftests
         template<size_t NumOfRuns>
         auto test_euclidianWeightedDist()
         {
-            Eigen::MatrixXi m(1, 5);
-            m << 1, 2, 3, 4, 5;
-            m = (m.array() > 3).select(3, m);
-            std::cout << "output:" << m << '\n';
-
             setup();
 
             sut.randomInitialize(std::time(NULL), 1);
@@ -150,6 +144,7 @@ namespace Perftests
 
             auto endTime = high_resolution_clock::now();
 
+            // Just to ensure compiler does not optimize 'res' away
             std::cout << res << '\n';
 
             return (endTime - startTime);
