@@ -267,6 +267,136 @@ SomIndex Som::findRestrictedBmu(const Eigen::VectorXf &v, const std::vector<int>
 }
 
 // Searches the neighbourhood of map starting from neuron lastBMU and returns index of neuron closest to v
+SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, 
+	const size_t &lastBMUref, const Eigen::VectorXf &weights) const
+{
+	size_t lastBMU = lastBMUref;
+	double minDist = this->euclidianWeightedDist(lastBMU, v, valid, weights);
+	size_t minIndex = lastBMU;
+	int firstSearchX[8] = {-1, 0, 1, 1, 1, 0, -1, -1};
+	int firstSearchY[8] = {1, 1, 1, 0, -1, -1, -1, 0};
+	
+	size_t lastMeasured = lastBMU;
+	
+	int lastMeasuredX, lastMeasuredY, lastBMUX, lastBMUY;
+	
+	int currentX, currentY;
+	int startX, endX;
+	
+	bool success = false;
+	
+	while(!success)
+	{
+		lastMeasuredX = lastMeasured % width;
+		lastMeasuredY = lastMeasured / width;
+		
+		lastBMUX = lastBMU % width;
+		lastBMUY = lastBMU / width;
+		
+		//std::cout << "lastMeasuredX:" << lastMeasuredX << "\tlastMeasuredY:" << lastMeasuredY << "\n";
+		//std::cout << "lastBMUX:" << lastBMUX << "\tlastBMUY:" << lastBMUY << "\n";
+		
+		// If first try
+		if( lastMeasured == lastBMU )
+		{
+			for(int i = 0; i < 8; ++i)
+			{
+				currentX = std::max((int)std::min(lastMeasuredX + firstSearchX[i], (int)width-1), 0);
+				currentY = std::max((int)std::min(lastMeasuredY + firstSearchY[i], (int)height-1), 0);
+				double currentDist;
+				//std::cout << "X:" << currentX << "\tY:" << currentY << "\tindex:" << currentY*width + currentX << "\n";
+				if( (currentDist = this->euclidianWeightedDist( currentY*width + currentX , v, valid, weights)) < minDist )
+				{
+					minDist = currentDist;
+					minIndex = currentY*width + currentX;
+				}
+			}
+			
+			// If BMU has not changed. Do no more
+			if( minIndex == lastBMU )
+			{
+				return SomIndex{minIndex % width, minIndex / width};
+			}
+			else
+			{
+				lastMeasured = minIndex;
+			}
+		}
+		// If not first try
+		else
+		{
+			// If we are moving in X direction
+			if( lastMeasuredX - lastBMUX )
+			{
+				for(int i = -1; i < 2; ++i)
+				{
+					currentX = std::max((int)std::min(lastMeasuredX + lastMeasuredX - lastBMUX, (int)width-1), 0);
+					currentY = std::max((int)std::min(( lastMeasuredY + i ), (int)height-1), 0);
+					//std::cout << "X2:" << currentX << "\tY2:" << currentY << "\t2index:" << currentY*width + currentX << "\n";
+					double currentDist;
+					if( (currentDist = this->euclidianWeightedDist( currentY*width + currentX , v, valid, weights)) < minDist )
+					{
+						minDist = currentDist;
+						minIndex = currentY*width + currentX;
+					}
+				}
+			}
+			
+			// If we are moving in Y direction
+			if( lastMeasuredY - lastBMUY )
+			{
+				// When moving in positive Y direction, we have already measured distance from X-point + 1
+				if( lastMeasuredX - lastBMUX > 0 )
+				{
+					startX = -1;
+					endX = 0;
+				}
+				// When moving in negative Y direction, we have already measured distance from X-point - 1
+				else if( lastMeasuredX - lastBMUX < 0 )
+				{
+					startX = 0;
+					endX = 1;
+				}
+				// When not moving at all in Y direction, we have to measure all three points in X range from -1 to 1
+				else
+				{
+					startX = -1;
+					endX = 1;
+				}
+				for(int i = startX; i < (endX + 1); ++i)
+				{
+					currentX = std::max((int)std::min(( lastMeasuredX + i ), (int)width-1), 0);
+					currentY = std::max((int)std::min(lastMeasuredY + lastMeasuredY - lastBMUY, (int)height-1), 0);
+					//std::cout << "X3:" << currentX << "\tY3:" << currentY << "\t3index:" << currentY*width + currentX << "\n";
+					double currentDist;
+					if( (currentDist = this->euclidianWeightedDist( currentY*width + currentX , v, valid, weights)) < minDist )
+					{
+						minDist = currentDist;
+						minIndex = currentY*width + currentX;
+					}
+				}
+			}
+			
+			//std::cout << "minIndex:" << minIndex << "\tlastMeasured:" << lastMeasured << "\n";
+			
+			// If BMU did not change since last try, do no more
+			if( minIndex == lastMeasured )
+			{
+				return SomIndex{minIndex % width, minIndex / width};
+			}
+			// Otherwise update BMUs
+			else
+			{
+				lastBMU = lastMeasured;
+				lastMeasured = minIndex;
+			}
+		}
+	}
+	
+	return SomIndex{minIndex % width, minIndex / width};
+}
+
+// Searches the neighbourhood of map starting from neuron lastBMU and returns index of neuron closest to v
 SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, 
 	const size_t &lastBMUref, const std::vector<double> &weights) const
 {
@@ -735,6 +865,73 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 	}
 	
 	return success;
+}
+
+// Trains on a single data point, i.e. a single record vector v is used to update 
+// the map weights with parameters valid, weights, eta, sigma and weightDecayFunction
+// lastBMU is the index of the BMU that this specific record found last epoch. 
+// It's used as a starting point if we're looking for a local BMU.
+SomIndex Som::trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights, 
+	const double eta, const double sigma, size_t &lastBMU, const int weightDecayFunction)
+{
+	// Find best matching unit (bmu)
+	const auto bmu = [this, sigma, v, valid, weights, lastBMU]()
+	{
+		return sigma > SIGMA_SWITCH_TO_LOCAL ? findBmu(v, valid, weights) : findLocalBmu(v, valid, lastBMU, weights);
+	}();
+
+	// Save last BMU to dataset
+	lastBMU = bmu.getY() * width + bmu.getX();
+	
+	// Size of neighbourhood
+	// Only calculate new values within +- 2.5 standard deviations of neighbourhood
+	size_t startX = std::max( (int)(bmu.getX()-2.5*sigma), 0);
+	size_t startY = std::max( (int)(bmu.getY()-2.5*sigma), 0);
+	
+	size_t endX = std::min( (int)(bmu.getX()+2.5*sigma), (int)width);
+	size_t endY = std::min( (int)(bmu.getY()+2.5*sigma), (int)height);
+	
+	for(size_t j = startY; j < endY; j++)
+	{
+		for(size_t i = startX; i < endX; i++)
+		{
+			// Calculate delta vector
+			auto delta = ((v - map[j*width + i]).array()*valid.array()).matrix();
+			
+			// Strength of neighbourhood. Calculated for each neuron
+			auto neighbourhoodWeight = calculateNeighbourhoodWeight(i, j, bmu.getX(), bmu.getY(), sigma);
+			
+			/*	Ref.
+			* Incremental calculation of weighed mean and variance. Tony Finch. University of Cambrige Computing Service. February 2009.
+			* */
+			
+			// Exponential weight decay function
+			if(weightDecayFunction == 0)
+			{
+				weightMap[j*width + i] += neighbourhoodWeight*eta;
+				map[j*width + i] += neighbourhoodWeight*eta*delta;
+			}
+			// Inverse proportional weight decay function
+			else
+			{
+				weightMap[j*width + i] += neighbourhoodWeight; // Equation 47
+				
+				// Protection against division by zero
+				auto tempWeight = weightMap[j*width + i] == 0 ? 1.0 : neighbourhoodWeight/weightMap[j*width + i];
+				
+				map[j*width + i] += tempWeight*(v - map[j*width + i]); // Equation 53
+			}
+			
+			// Protection against division by zero
+			auto tempWeight = weightMap[j*width + i] == 0 ? 0.000001 : weightMap[j*width + i];
+			
+			SMap[j*width + i] += neighbourhoodWeight*(delta.array()*(v - map[j*width + i]).array()).matrix(); // Equation 68
+			sigmaMap[j*width + i] = (SMap[j*width + i].array()/tempWeight).abs().sqrt().matrix(); // Equation 69
+			
+		}
+	}
+	// Return best matching unit
+	return bmu;
 }
 
 // Trains on a single data point, i.e. a single record vector v is used to update 

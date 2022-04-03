@@ -69,6 +69,34 @@ namespace Perftests
             return (endTime - startTime) / numOfEpochs;
         }
 
+        template<size_t NumOfRuns>
+        auto test_trainSingle(const int weightDecayFunction)
+        {
+            setup();
+
+            sut.randomInitialize(std::time(NULL), 1);
+
+            auto positions = std::array<size_t, NumOfRuns>();
+            for(auto& element : positions)
+                element = std::rand() % 100*100;
+            
+            auto samples = std::array<Eigen::VectorXf, NumOfRuns>();
+            for(auto& sample : samples)
+                sample = Eigen::VectorXf::Random(100);
+
+            auto validityVector = Eigen::VectorXf::Ones(100);
+            auto weightVector = Eigen::VectorXf::Ones(100);
+
+            auto startTime = high_resolution_clock::now();
+            
+            for (size_t i{0}; i < NumOfRuns; ++i)
+                sut.trainSingle(samples[i], validityVector, weightVector, 0.1, 50, positions[i], weightDecayFunction);
+
+            auto endTime = high_resolution_clock::now();
+
+            return endTime - startTime;
+        }
+
         auto test_evaluate(const char *dbPath, const char *columnSpecPath)
         {
             auto db = DataBase{};
@@ -122,6 +150,30 @@ namespace Perftests
             return endTime - startTime;
         }
         template<size_t NumOfRuns>
+        auto test_findLocalBmu()
+        {
+            setup();
+
+            sut.randomInitialize(std::time(NULL), 1);
+
+            auto positions = std::array<size_t, NumOfRuns>();
+            for(auto& element : positions)
+                element = std::rand() % 100*100;
+
+            auto modelVector = Eigen::VectorXf::Random(100);
+            auto validityVector = Eigen::VectorXf::Ones(100);
+            auto weightVector = Eigen::VectorXf::Ones(100);
+
+            auto startTime = high_resolution_clock::now();
+            
+            for (size_t i{0}; i < NumOfRuns; ++i)
+                sut.findLocalBmu(modelVector, validityVector, positions[i], weightVector);
+
+            auto endTime = high_resolution_clock::now();
+
+            return endTime - startTime;
+        }
+        template<size_t NumOfRuns>
         auto test_euclidianWeightedDist()
         {
             setup();
@@ -147,7 +199,7 @@ namespace Perftests
             // Just to ensure compiler does not optimize 'res' away
             std::cout << res << '\n';
 
-            return (endTime - startTime);
+            return endTime - startTime;
         }
     };
 
@@ -157,11 +209,14 @@ int main()
     using namespace Perftests;
     auto tester = SomTests{};
 
-    // printResultToFile(tester.test_randomInitialize(), "Som::randomInitialize()");
-    // printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 0), "Som::train(exponentialWeightDecay)");
-    // printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 1), "Som::train(inverseProportionalWeightDecay)");
-    // printResultToFile(tester.test_evaluate("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::evaluate()");
+    printResultToFile(tester.test_randomInitialize(), "Som::randomInitialize()");
+    printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 0), "Som::train(exponentialWeightDecay)");
+    printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 1), "Som::train(inverseProportionalWeightDecay)");
+    printResultToFile(tester.test_evaluate("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::evaluate()");
 
+    printResultToFile(tester.test_trainSingle<1000>(0), "Som:trainSingle(exponentialWeightDecay) per thousand");
+    printResultToFile(tester.test_trainSingle<1000>(1), "Som:trainSingle(inverseProportionalWeightDecay) per thousand");
     printResultToFile(tester.test_euclidianWeightedDist<1000000>(), "Som:euclidianWeightedDist() per milion");
     printResultToFile(tester.test_findBmu<1000>(), "Som::findBmu() per thousand");
+    printResultToFile(tester.test_findLocalBmu<1000000>(), "Som::findLocalBmu() per milion");
 }
