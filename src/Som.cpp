@@ -123,6 +123,21 @@ double Som::euclidianWeightedDist(
 // Considers only dimensions where valid is true.
 // All dimensions are weighed individually by weights vector
 double Som::euclidianWeightedDist(
+	const SomIndex &pos, const Eigen::VectorXf &v, 
+	const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const
+{
+	//return std::sqrt( (this->getNeuron(pos) - v).dot(this->getNeuron(pos) - v) );
+	
+	int intPos = pos.getY()*width + pos.getX();
+	
+	return( euclidianWeightedDist(intPos, v, valid, weights) );
+	
+}
+
+// Returns the Euclidian squared distance between neuron at position pos and vector v.
+// Considers only dimensions where valid is true.
+// All dimensions are weighed individually by weights vector
+double Som::euclidianWeightedDist(
 	const size_t &pos, const Eigen::VectorXf &v, 
 	const std::vector<int> &valid, const std::vector<float> &weights) const
 {
@@ -564,49 +579,30 @@ double Som::evaluate(const DataSet &data) const
 {
 	double error = 0;
 	
-	auto bT = std::vector<float>(data.vectorLength());
-	auto cT = std::vector<float>(data.vectorLength());
-	auto tmp = std::vector<float>(data.vectorLength());
-	Eigen::VectorXf binaryEigen;
-	Eigen::VectorXf validEigen;
 	Eigen::VectorXf binaryError;
 	Eigen::ArrayXf ones(map[0].size(), 1);
+
+	auto continuous = data.getContinuousEigen();
 	
-	for(size_t n = 0; n<data.vectorLength(); n++)
-	{
-		bT[n] = (float)data.getBinary()[n];
-		cT[n] = (float)data.getContinuous()[n];
-	}
-	
-	binaryEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(bT.data(), map[0].size());
+	auto binaryEigen = data.getBinaryEigen().cast<float>();
 	
 	for(size_t i = 0; i<data.size(); i++)
 	{
-		auto val = data.getValidity(i);
+		auto val = (data.getValidityEigen(i).array()*continuous).cast<float>();
 		
-		for(size_t n = 0; n<data.vectorLength(); n++)
-		{
-			tmp[n] = (float)val[n];
-			// Multiply valid vector with continuous vector in order to get valid times continious (all binary dimensions are = 0)
-			val[n] = val[n]*cT[n];
-		}
+		SomIndex bmu = this->findBmu(data.getData(i), val.cast<float>(), data.getWeightsEigen());
 		
-		validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp.data(), map[0].size());
-		SomIndex bmu = this->findBmu(data.getData(i), val, data.getWeights());
-		
-		binaryError = (((this->getNeuron(bmu).array().log()*data.getData(i).array())+((ones-this->getNeuron(bmu).array()).log()*(ones-data.getData(i).array())))).matrix();
+		binaryError = (((this->getNeuron(bmu).array().log()*data.getData(i).array())+((ones-this->getNeuron(bmu).array()).log()*(ones-data.getData(i).array())))).array();
 		
 		// Replace NaNs and Infs with something big
-		for(size_t n = 0; n<data.vectorLength(); n++)
-		{
-			binaryError[n] = std::isnan(binaryError[n]) || std::isinf(binaryError[n]) ? -99999 : binaryError[n];
-		}
-		binaryError = (binaryError.array()*binaryEigen.array()*validEigen.array()).matrix();
+		binaryError = (binaryError.array().isNaN() || binaryError.array().isInf()).select(-99999, binaryError);
+
+		binaryError = (binaryError.array()*binaryEigen.array()*val.array()).matrix();
 		/*	Ref.
 		 * Incremental calculation of weighed mean and variance. Tony Finch. University of Cambrige Computing Service. February 2009.
 		 * Equation 4
 		 * Mean of binaryError + continious error */
-		error += (double)1/(i+1)*( this->euclidianWeightedDist(bmu, data.getData(i), val, data.getWeights()) + std::sqrt(binaryError.dot(binaryError)) - error );
+		error += (double)1/(i+1)*( this->euclidianWeightedDist(bmu, data.getData(i), val.cast<float>(), data.getWeightsEigen()) + std::sqrt(binaryError.dot(binaryError)) - error );
 		
 		//std::cout << "X:" << bmu.getX() << "\tY:" << bmu.getY() << "\tbinError:" << binaryError[6] << "\tv:" << data->getData(i)[6] << "\tmap:" << this->getNeuron(bmu)[6] << "\tbin?:" << binaryEigen[6] << "\tval?:" << validEigen[6] << "\n";
 		//std::cout << "\terror: " << error << "\ti+1:" << i+1 << "\tx_(i+1):" << this->euclidianWeightedDist(bmu, data->getData(i), val, data->getWeights()) << "\tbinary error:" << std::sqrt(binaryError.dot(binaryError)) << "\n";
@@ -897,83 +893,6 @@ SomIndex Som::trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid
 		{
 			// Calculate delta vector
 			auto delta = ((v - map[j*width + i]).array()*valid.array()).matrix();
-			
-			// Strength of neighbourhood. Calculated for each neuron
-			auto neighbourhoodWeight = calculateNeighbourhoodWeight(i, j, bmu.getX(), bmu.getY(), sigma);
-			
-			/*	Ref.
-			* Incremental calculation of weighed mean and variance. Tony Finch. University of Cambrige Computing Service. February 2009.
-			* */
-			
-			// Exponential weight decay function
-			if(weightDecayFunction == 0)
-			{
-				weightMap[j*width + i] += neighbourhoodWeight*eta;
-				map[j*width + i] += neighbourhoodWeight*eta*delta;
-			}
-			// Inverse proportional weight decay function
-			else
-			{
-				weightMap[j*width + i] += neighbourhoodWeight; // Equation 47
-				
-				// Protection against division by zero
-				auto tempWeight = weightMap[j*width + i] == 0 ? 1.0 : neighbourhoodWeight/weightMap[j*width + i];
-				
-				map[j*width + i] += tempWeight*(v - map[j*width + i]); // Equation 53
-			}
-			
-			// Protection against division by zero
-			auto tempWeight = weightMap[j*width + i] == 0 ? 0.000001 : weightMap[j*width + i];
-			
-			SMap[j*width + i] += neighbourhoodWeight*(delta.array()*(v - map[j*width + i]).array()).matrix(); // Equation 68
-			sigmaMap[j*width + i] = (SMap[j*width + i].array()/tempWeight).abs().sqrt().matrix(); // Equation 69
-			
-		}
-	}
-	// Return best matching unit
-	return bmu;
-}
-
-// Trains on a single data point, i.e. a single record vector v is used to update 
-// the map weights with parameters valid, weights, eta, sigma and weightDecayFunction
-// lastBMU is the index of the BMU that this specific record found last epoch. 
-// It's used as a starting point if we're looking for a local BMU.
-SomIndex Som::trainSingle(const Eigen::VectorXf &v, const std::vector<int> &valid, const std::vector<float> &weights, 
-	const double eta, const double sigma, size_t &lastBMU, const int weightDecayFunction)
-{
-	// Find best matching unit (bmu)
-	const auto bmu = [this, sigma, v, valid, weights, lastBMU]()
-	{
-		return sigma > SIGMA_SWITCH_TO_LOCAL ? findBmu(v, valid, weights) : findLocalBmu(v, valid, lastBMU, weights);
-	}();
-
-	// Save last BMU to dataset
-	lastBMU = bmu.getY() * width + bmu.getX();
-	
-	// Size of neighbourhood
-	// Only calculate new values within +- 2.5 standard deviations of neighbourhood
-	size_t startX = std::max( (int)(bmu.getX()-2.5*sigma), 0);
-	size_t startY = std::max( (int)(bmu.getY()-2.5*sigma), 0);
-	
-	size_t endX = std::min( (int)(bmu.getX()+2.5*sigma), (int)width);
-	size_t endY = std::min( (int)(bmu.getY()+2.5*sigma), (int)height);
-	
-	// Conversion array for conversion of vector<int> valid to Eigen::VectorXf validEigen
-	auto tmp = std::vector<float>(valid.size());
-
-	for(unsigned int i = 0; i<valid.size(); i++)
-	{
-		tmp[i] = (float)valid[i];
-	}
-	Eigen::VectorXf validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp.data(), valid.size());
-	
-	
-	for(size_t j = startY; j < endY; j++)
-	{
-		for(size_t i = startX; i < endX; i++)
-		{
-			// Calculate delta vector
-			auto delta = ((v - map[j*width + i]).array()*validEigen.array()).matrix();
 			
 			// Strength of neighbourhood. Calculated for each neuron
 			auto neighbourhoodWeight = calculateNeighbourhoodWeight(i, j, bmu.getX(), bmu.getY(), sigma);
