@@ -15,7 +15,7 @@ class DataSet
 		std::vector<std::string> variableNames;
 		std::vector<int> binary;
 		std::vector<int> continuous;
-		std::vector<double> weight;
+		std::vector<float> weight;
 		std::vector<size_t> lastBMU;
 		size_t depth, n;
 		bool _verbose;
@@ -25,9 +25,11 @@ public:
 		~DataSet() = default;
 		Eigen::VectorXf getData(size_t) const;
 		std::vector<int> getValidity(size_t) const;
+		Eigen::VectorXi getValidityEigen(size_t index);
 		std::vector<int> getBinary() const;
 		std::vector<int> getContinuous() const;
-		std::vector<double> getWeights() const;
+		std::vector<float> getWeights() const;
+		const Eigen::VectorXf getWeightsEigen();
 		std::string getName(size_t) const;
 		size_t &getLastBMU(size_t);
 		size_t size() const;

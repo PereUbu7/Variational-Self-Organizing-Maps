@@ -109,7 +109,7 @@ void Som::display() const
 // All dimensions are weighed individually by weights vector
 double Som::euclidianWeightedDist(
 	const SomIndex &pos, const Eigen::VectorXf &v, 
-	const std::vector<int> &valid, const std::vector<double> &weights) const
+	const std::vector<int> &valid, const std::vector<float> &weights) const
 {
 	//return std::sqrt( (this->getNeuron(pos) - v).dot(this->getNeuron(pos) - v) );
 	
@@ -124,7 +124,7 @@ double Som::euclidianWeightedDist(
 // All dimensions are weighed individually by weights vector
 double Som::euclidianWeightedDist(
 	const size_t &pos, const Eigen::VectorXf &v, 
-	const std::vector<int> &valid, const std::vector<double> &weights) const
+	const std::vector<int> &valid, const std::vector<float> &weights) const
 {
 	// Don't look at dimensions with invalid values
 	auto tmp = std::vector<float>(valid.size());
@@ -202,7 +202,7 @@ Eigen::VectorXf Som::getSigmaNeuron(size_t i) const
 
 // Search through whole map and return index of neuron that is closest to v.
 // Only considers valid dimensions with weights
-SomIndex Som::findBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, const std::vector<double> &weights) const
+SomIndex Som::findBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, const std::vector<float> &weights) const
 {
 	auto minDist = this->euclidianWeightedDist(0, v, valid, weights);
 	int minIndex = 0;
@@ -245,7 +245,7 @@ SomIndex Som::findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, co
 // Search through whole map where bmuHits > minBmuHits and return index of neuron that is closest to v.
 // Only considers valid dimensions with weights
 SomIndex Som::findRestrictedBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, 
-	const int minBmuHits, const std::vector<double> &weights) const
+	const int minBmuHits, const std::vector<float> &weights) const
 {
 	auto minDist = this->euclidianWeightedDist(0, v, valid, weights);
 	int minIndex = 0;
@@ -398,7 +398,7 @@ SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &vali
 
 // Searches the neighbourhood of map starting from neuron lastBMU and returns index of neuron closest to v
 SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, 
-	const size_t &lastBMUref, const std::vector<double> &weights) const
+	const size_t &lastBMUref, const std::vector<float> &weights) const
 {
 	size_t lastBMU = lastBMUref;
 	double minDist = this->euclidianWeightedDist(lastBMU, v, valid, weights);
@@ -528,7 +528,7 @@ SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const std::vector<int> &val
 
 /*				find restricted Best Matching Distribution				*/
 std::vector<double> Som::findRestrictedBmd(const Eigen::VectorXf &v, const std::vector<int> &valid, 
-	int minBmuHits, const std::vector<double> &weights) const
+	int minBmuHits, const std::vector<float> &weights) const
 {
 	std::vector<double> dist(height*width, -1);
 	
@@ -637,7 +637,7 @@ size_t Som::variationalAutoEncoder(const DataSet *data, int minBmuHits) const
 		
 		std::vector<int> val = data->getValidity(i);
 		
-		std::vector<double> w = data->getWeights();
+		std::vector<float> w = data->getWeights();
 		
 		// Find distribution for sample vector
 		probability = findRestrictedBmd(v, val, minBmuHits, w);
@@ -678,7 +678,7 @@ int Som::autoEncoder(const DataSet *data, int minBmuHits) const
 		
 		std::vector<int> val = data->getValidity(i);
 		
-		std::vector<double> w = data->getWeights();
+		std::vector<float> w = data->getWeights();
 		
 		// Now we're just getting the bmu to sample from that univariate normal distribution.
 		// What we could do is to take a distribution over model vectors (use variationalAutoEncoder function),
@@ -938,7 +938,7 @@ SomIndex Som::trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid
 // the map weights with parameters valid, weights, eta, sigma and weightDecayFunction
 // lastBMU is the index of the BMU that this specific record found last epoch. 
 // It's used as a starting point if we're looking for a local BMU.
-SomIndex Som::trainSingle(const Eigen::VectorXf &v, const std::vector<int> &valid, const std::vector<double> &weights, 
+SomIndex Som::trainSingle(const Eigen::VectorXf &v, const std::vector<int> &valid, const std::vector<float> &weights, 
 	const double eta, const double sigma, size_t &lastBMU, const int weightDecayFunction)
 {
 	// Find best matching unit (bmu)
@@ -1053,7 +1053,7 @@ void Som::updateUMatrix(const DataSet *data)
 {
 	std::vector<double> U(width*height);
 	std::vector<int> val(map[0].size(), 1);
-	std::vector<double> weights(data->getWeights());
+	std::vector<float> weights(data->getWeights());
 	double diagonalFactor = 0.3;
 	double min = 10000000, 
 			max = 0;
@@ -1166,10 +1166,12 @@ void Som::train(DataSet *data, size_t numberOfEpochs, double eta0, double etaDec
 		if(sigma < 1.0) sigma = 1.0;
 		
 		std::cout << "Epoch: " << i+1 << "/" << numberOfEpochs << "\teta: " << eta << "\tsigma: " << sigma << "\n";
+
+		auto weights = data->getWeightsEigen();
 		
 		for(size_t j = 0; j < data->size(); ++j)
 		{
-			auto pos = trainSingle(data->getData(j), data->getValidity(j), data->getWeights(), eta, sigma, data->getLastBMU(j), weightDecayFunction);
+			auto pos = trainSingle(data->getData(j), data->getValidityEigen(j).cast<float>(), weights, eta, sigma, data->getLastBMU(j), weightDecayFunction);
 			
 			addBmu(pos);
 			if( ( data->size() > 100 && (j % (int)(data->size()/100)) == 0 ) || data->size() < 100 )

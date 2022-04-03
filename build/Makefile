@@ -9,7 +9,7 @@ BIN = sqlite libsom test perfTest VSOM
 debug: CXXFLAGS += -g -O0
 debug: CCFLAGS += -g -O0
 debug: all
-release: CXXFLAGS += -O3
+release: CXXFLAGS += -O3 -msse2
 release: CCFLAGS += -O3
 release: all
 

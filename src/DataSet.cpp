@@ -76,6 +76,12 @@ std::vector<int> DataSet::getValidity(size_t index) const
 	return valid[index];
 }
 
+Eigen::VectorXi DataSet::getValidityEigen(size_t index)
+{
+	assert(n > index);
+	return Eigen::Map<Eigen::VectorXi>(valid[index].data(), valid[index].size());
+}
+
 std::vector<int> DataSet::getBinary() const
 {
 	return binary;
@@ -98,9 +104,14 @@ std::string DataSet::getName(size_t index) const
 	return variableNames[index];
 }
 
-std::vector<double> DataSet::getWeights() const
+std::vector<float> DataSet::getWeights() const
 {
 	return weight;
+}
+
+const Eigen::VectorXf DataSet::getWeightsEigen()
+{
+	return Eigen::Map<Eigen::VectorXf>(weight.data(), weight.size());
 }
 
 size_t DataSet::size() const

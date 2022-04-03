@@ -52,27 +52,27 @@ public:
 	~Som() = default;
 	void train(DataSet *, size_t, double, double, double, double, int);
 	double evaluate(const DataSet&) const;
-	SomIndex trainSingle(const Eigen::VectorXf&, const std::vector<int>&, const std::vector<double>&, const double, const double, size_t &, const int);
+	SomIndex trainSingle(const Eigen::VectorXf&, const std::vector<int>&, const std::vector<float>&, const double, const double, size_t &, const int);
 	SomIndex trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights, const double eta, const double sigma, size_t &lastBMU, const int weightDecayFunction);
 	int measureSimilarity(const DataSet *, int, int) const;
 	int autoEncoder(const DataSet *, int) const;
 	size_t variationalAutoEncoder(const DataSet *, int) const;
-	SomIndex findBmu(const Eigen::VectorXf&, const std::vector<int>&, const std::vector<double>&) const;
+	SomIndex findBmu(const Eigen::VectorXf&, const std::vector<int>&, const std::vector<float>&) const;
 	SomIndex findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const;
-	SomIndex findLocalBmu(const Eigen::VectorXf&, const std::vector<int>&, const size_t&, const std::vector<double>&) const;
+	SomIndex findLocalBmu(const Eigen::VectorXf&, const std::vector<int>&, const size_t&, const std::vector<float>&) const;
 	SomIndex findLocalBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const size_t &lastBMUref, const Eigen::VectorXf &weights) const;
-	SomIndex findRestrictedBmu(const Eigen::VectorXf&, const std::vector<int>&, const int, const std::vector<double>&) const;
-	std::vector<double> findRestrictedBmd(const Eigen::VectorXf&, const std::vector<int>&, int, const std::vector<double>&) const;
+	SomIndex findRestrictedBmu(const Eigen::VectorXf&, const std::vector<int>&, const int, const std::vector<float>&) const;
+	std::vector<double> findRestrictedBmd(const Eigen::VectorXf&, const std::vector<int>&, int, const std::vector<float>&) const;
 	double euclidianWeightedDist(
 		const SomIndex&, 
 		const Eigen::VectorXf&, 
 		const std::vector<int>&, 
-		const std::vector<double>&) const;
+		const std::vector<float>&) const;
 	double euclidianWeightedDist(
 		const size_t &pos, 
 		const Eigen::VectorXf&, 
 		const std::vector<int>&, 
-		const std::vector<double>&) const;
+		const std::vector<float>&) const;
 	double euclidianWeightedDist(
 		const size_t &pos, 
 		const Eigen::VectorXf &v, 
