@@ -56,22 +56,18 @@ public:
 	int measureSimilarity(const DataSet *, int, int) const;
 	int autoEncoder(const DataSet *, int) const;
 	size_t variationalAutoEncoder(const DataSet *, int) const;
-	SomIndex findBmu(const Eigen::VectorXf&, const std::vector<int>&, const std::vector<float>&) const;
 	SomIndex findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const;
-	SomIndex findLocalBmu(const Eigen::VectorXf&, const std::vector<int>&, const size_t&, const std::vector<float>&) const;
 	SomIndex findLocalBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const size_t &lastBMUref, const Eigen::VectorXf &weights) const;
+	// TODO:
 	SomIndex findRestrictedBmu(const Eigen::VectorXf&, const std::vector<int>&, const int, const std::vector<float>&) const;
+	// TODO:
 	std::vector<double> findRestrictedBmd(const Eigen::VectorXf&, const std::vector<int>&, int, const std::vector<float>&) const;
-	double euclidianWeightedDist(
-		const SomIndex&, 
-		const Eigen::VectorXf&, 
-		const std::vector<int>&, 
-		const std::vector<float>&) const;
 	double euclidianWeightedDist(
 		const SomIndex &pos, 
 		const Eigen::VectorXf &v, 
 		const Eigen::VectorXf &valid, 
 		const Eigen::VectorXf &weights) const;
+	// TO be removed
 	double euclidianWeightedDist(
 		const size_t &pos, 
 		const Eigen::VectorXf&, 

@@ -109,21 +109,6 @@ void Som::display() const
 // All dimensions are weighed individually by weights vector
 double Som::euclidianWeightedDist(
 	const SomIndex &pos, const Eigen::VectorXf &v, 
-	const std::vector<int> &valid, const std::vector<float> &weights) const
-{
-	//return std::sqrt( (this->getNeuron(pos) - v).dot(this->getNeuron(pos) - v) );
-	
-	int intPos = pos.getY()*width + pos.getX();
-	
-	return( euclidianWeightedDist(intPos, v, valid, weights) );
-	
-}
-
-// Returns the Euclidian squared distance between neuron at position pos and vector v.
-// Considers only dimensions where valid is true.
-// All dimensions are weighed individually by weights vector
-double Som::euclidianWeightedDist(
-	const SomIndex &pos, const Eigen::VectorXf &v, 
 	const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const
 {
 	//return std::sqrt( (this->getNeuron(pos) - v).dot(this->getNeuron(pos) - v) );
@@ -215,28 +200,6 @@ Eigen::VectorXf Som::getSigmaNeuron(size_t i) const
 	return sigmaMap[i];
 }
 
-// Search through whole map and return index of neuron that is closest to v.
-// Only considers valid dimensions with weights
-SomIndex Som::findBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, const std::vector<float> &weights) const
-{
-	auto minDist = this->euclidianWeightedDist(0, v, valid, weights);
-	int minIndex = 0;
-	
-	for(size_t i = 0; i < height*width; ++i)
-	{
-		double currentDist;
-		if( (currentDist = this->euclidianWeightedDist(i, v, valid, weights)) < minDist )
-		{
-			minDist = currentDist;
-			minIndex = i;
-		}
-	}
-	
-	SomIndex returnIndex(minIndex % width, minIndex / width );
-	
-	return returnIndex;
-}
-
 SomIndex Som::findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const
 {
 	auto minDist = this->euclidianWeightedDist(0, v, valid, weights);
@@ -284,136 +247,6 @@ SomIndex Som::findRestrictedBmu(const Eigen::VectorXf &v, const std::vector<int>
 // Searches the neighbourhood of map starting from neuron lastBMU and returns index of neuron closest to v
 SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, 
 	const size_t &lastBMUref, const Eigen::VectorXf &weights) const
-{
-	size_t lastBMU = lastBMUref;
-	double minDist = this->euclidianWeightedDist(lastBMU, v, valid, weights);
-	size_t minIndex = lastBMU;
-	int firstSearchX[8] = {-1, 0, 1, 1, 1, 0, -1, -1};
-	int firstSearchY[8] = {1, 1, 1, 0, -1, -1, -1, 0};
-	
-	size_t lastMeasured = lastBMU;
-	
-	int lastMeasuredX, lastMeasuredY, lastBMUX, lastBMUY;
-	
-	int currentX, currentY;
-	int startX, endX;
-	
-	bool success = false;
-	
-	while(!success)
-	{
-		lastMeasuredX = lastMeasured % width;
-		lastMeasuredY = lastMeasured / width;
-		
-		lastBMUX = lastBMU % width;
-		lastBMUY = lastBMU / width;
-		
-		//std::cout << "lastMeasuredX:" << lastMeasuredX << "\tlastMeasuredY:" << lastMeasuredY << "\n";
-		//std::cout << "lastBMUX:" << lastBMUX << "\tlastBMUY:" << lastBMUY << "\n";
-		
-		// If first try
-		if( lastMeasured == lastBMU )
-		{
-			for(int i = 0; i < 8; ++i)
-			{
-				currentX = std::max((int)std::min(lastMeasuredX + firstSearchX[i], (int)width-1), 0);
-				currentY = std::max((int)std::min(lastMeasuredY + firstSearchY[i], (int)height-1), 0);
-				double currentDist;
-				//std::cout << "X:" << currentX << "\tY:" << currentY << "\tindex:" << currentY*width + currentX << "\n";
-				if( (currentDist = this->euclidianWeightedDist( currentY*width + currentX , v, valid, weights)) < minDist )
-				{
-					minDist = currentDist;
-					minIndex = currentY*width + currentX;
-				}
-			}
-			
-			// If BMU has not changed. Do no more
-			if( minIndex == lastBMU )
-			{
-				return SomIndex{minIndex % width, minIndex / width};
-			}
-			else
-			{
-				lastMeasured = minIndex;
-			}
-		}
-		// If not first try
-		else
-		{
-			// If we are moving in X direction
-			if( lastMeasuredX - lastBMUX )
-			{
-				for(int i = -1; i < 2; ++i)
-				{
-					currentX = std::max((int)std::min(lastMeasuredX + lastMeasuredX - lastBMUX, (int)width-1), 0);
-					currentY = std::max((int)std::min(( lastMeasuredY + i ), (int)height-1), 0);
-					//std::cout << "X2:" << currentX << "\tY2:" << currentY << "\t2index:" << currentY*width + currentX << "\n";
-					double currentDist;
-					if( (currentDist = this->euclidianWeightedDist( currentY*width + currentX , v, valid, weights)) < minDist )
-					{
-						minDist = currentDist;
-						minIndex = currentY*width + currentX;
-					}
-				}
-			}
-			
-			// If we are moving in Y direction
-			if( lastMeasuredY - lastBMUY )
-			{
-				// When moving in positive Y direction, we have already measured distance from X-point + 1
-				if( lastMeasuredX - lastBMUX > 0 )
-				{
-					startX = -1;
-					endX = 0;
-				}
-				// When moving in negative Y direction, we have already measured distance from X-point - 1
-				else if( lastMeasuredX - lastBMUX < 0 )
-				{
-					startX = 0;
-					endX = 1;
-				}
-				// When not moving at all in Y direction, we have to measure all three points in X range from -1 to 1
-				else
-				{
-					startX = -1;
-					endX = 1;
-				}
-				for(int i = startX; i < (endX + 1); ++i)
-				{
-					currentX = std::max((int)std::min(( lastMeasuredX + i ), (int)width-1), 0);
-					currentY = std::max((int)std::min(lastMeasuredY + lastMeasuredY - lastBMUY, (int)height-1), 0);
-					//std::cout << "X3:" << currentX << "\tY3:" << currentY << "\t3index:" << currentY*width + currentX << "\n";
-					double currentDist;
-					if( (currentDist = this->euclidianWeightedDist( currentY*width + currentX , v, valid, weights)) < minDist )
-					{
-						minDist = currentDist;
-						minIndex = currentY*width + currentX;
-					}
-				}
-			}
-			
-			//std::cout << "minIndex:" << minIndex << "\tlastMeasured:" << lastMeasured << "\n";
-			
-			// If BMU did not change since last try, do no more
-			if( minIndex == lastMeasured )
-			{
-				return SomIndex{minIndex % width, minIndex / width};
-			}
-			// Otherwise update BMUs
-			else
-			{
-				lastBMU = lastMeasured;
-				lastMeasured = minIndex;
-			}
-		}
-	}
-	
-	return SomIndex{minIndex % width, minIndex / width};
-}
-
-// Searches the neighbourhood of map starting from neuron lastBMU and returns index of neuron closest to v
-SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, 
-	const size_t &lastBMUref, const std::vector<float> &weights) const
 {
 	size_t lastBMU = lastBMUref;
 	double minDist = this->euclidianWeightedDist(lastBMU, v, valid, weights);
