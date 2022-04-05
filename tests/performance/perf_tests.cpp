@@ -201,6 +201,27 @@ namespace Perftests
 
             return endTime - startTime;
         }
+
+        auto test_measureSimilarity(const char *dbPath, const char *columnSpecPath)
+        {
+            auto db = DataBase{};
+            auto dbOpenResult = db.open(dbPath);
+            assert(dbOpenResult != 0);
+
+            auto trainingSet = DataSet(columnSpecPath);
+
+            trainingSet.loadDataBase(&db);
+
+            sut = Som{100, 100, trainingSet.vectorLength()};
+
+            sut.randomInitialize(std::time(NULL), 1);
+
+            auto startTime = high_resolution_clock::now();
+            for(size_t run = int{}; run < numberOfRuns; ++run)
+                sut.measureSimilarity(&trainingSet, 1, 1);
+            auto endTime = high_resolution_clock::now();
+            return (endTime - startTime) / numberOfRuns;
+        }
     };
 
 }
@@ -213,6 +234,7 @@ int main()
     printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 0), "Som::train(exponentialWeightDecay)");
     printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 1), "Som::train(inverseProportionalWeightDecay)");
     printResultToFile(tester.test_evaluate("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::evaluate()");
+    printResultToFile(tester.test_measureSimilarity("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::measureSimilarity()");
 
     printResultToFile(tester.test_trainSingle<1000>(0), "Som:trainSingle(exponentialWeightDecay) per thousand");
     printResultToFile(tester.test_trainSingle<1000>(1), "Som:trainSingle(inverseProportionalWeightDecay) per thousand");
