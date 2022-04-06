@@ -222,6 +222,30 @@ SomIndex Som::findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, co
 
 // Search through whole map where bmuHits > minBmuHits and return index of neuron that is closest to v.
 // Only considers valid dimensions with weights
+SomIndex Som::findRestrictedBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, 
+	const int minBmuHits, const Eigen::VectorXf &weights) const
+{
+	auto minDist = this->euclidianWeightedDist(0, v, valid, weights);
+	int minIndex = 0;
+	
+	for(size_t i = 0; i < height*width; ++i)
+	{
+		double currentDist;
+		if( (currentDist = this->euclidianWeightedDist(i, v, valid, weights)) < minDist && bmuHits[i] >= minBmuHits )
+		{
+			minDist = currentDist;
+			minIndex = i;
+		}
+	}
+	
+	
+	SomIndex returnIndex(minIndex % width, minIndex / width );
+	
+	return returnIndex;
+}
+
+// Search through whole map where bmuHits > minBmuHits and return index of neuron that is closest to v.
+// Only considers valid dimensions with weights
 SomIndex Som::findRestrictedBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, 
 	const int minBmuHits, const std::vector<float> &weights) const
 {
@@ -373,6 +397,7 @@ SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &vali
 	
 	return SomIndex{minIndex % width, minIndex / width};
 }
+
 
 /*				find restricted Best Matching Distribution				*/
 std::vector<double> Som::findRestrictedBmd(const Eigen::VectorXf &v, const std::vector<int> &valid, 
@@ -574,22 +599,8 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 	int maxValueDataSetRow = 0;
 	int last = 0;
 	
-	auto bT = std::vector<float>(data->vectorLength());
-	auto cT = std::vector<float>(data->vectorLength());
-	Eigen::VectorXf binaryEigen, contEigen;
-	Eigen::ArrayXf ones(map[0].size(), 1);
-	
-	ones.setOnes(map[0].size());
-	
-	// Convert binary and continuous Eigen::Vectors to arrays
-	for(size_t n = 0;n<data->vectorLength(); n++)
-	{
-		bT[n] = (float)data->getBinary()[n];
-		cT[n] = (float)data->getContinuous()[n];
-	}
-	
-	binaryEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(bT.data(), map[0].size());
-	contEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(cT.data(), map[0].size());
+	auto binaryEigen = data->getBinaryEigen();
+	auto contEigen = data->getContinuousEigen();
 	
 	for( size_t i = 0; i < data->size() + 1; i++ )
 	{
@@ -599,35 +610,24 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 			last = 1;
 		}
 		
-		auto tmp = std::vector<float>(data->vectorLength());
-		Eigen::VectorXf validEigen;
-		Eigen::ArrayXf binaryMap(map[0].size());
-		
 		// Extract sample vector
 		Eigen::VectorXf v = data->getData(i);
-		
-		std::vector<int> val = data->getValidity(i);
 	
 		// Find best matching unit (bmu)
-		SomIndex bmu = findRestrictedBmu(v, val, minBmuHits, data->getWeights());
+		SomIndex bmu = findRestrictedBmu(v, data->getValidityEigen(i).cast<float>(), minBmuHits, data->getWeightsEigen());
 		
 		int pos = width*bmu.getY() + bmu.getX();
-		
+
 		// Modified sigma vector
-		Eigen::VectorXf sM(sigmaMap[pos].size());
+		Eigen::VectorXf sM = (sigmaMap[pos].array() > 0.00001f).select(0.00001f, sigmaMap[pos]);
 		
-		for(size_t n = 0;n<data->vectorLength(); n++)
-		{
-			sM(n) = sigmaMap[pos](n) == 0 ? 0.00001 : sigmaMap[pos](n);
-			tmp[n] = (float)data->getValidity(i)[n];
-			if(bT[n])
-			{
-				// Make map binary in order to get a proper interval (min - max) when comparing binaries
-				binaryMap(n) = this->getNeuron(bmu)(n) >= 0.5 ? 1 : 0;
-			}
-		}
+		// Make map binary in order to get a proper interval (min - max) when comparing binaries
+		Eigen::ArrayXf binaryMap = (binaryEigen.array() > 0).select(0.0f, map[pos]);
+		binaryMap = (binaryEigen.array() > 0 && this->getNeuron(bmu).array() >= 0.5)
+					.select(Eigen::VectorXf::Constant(binaryMap.size(), 1.0f), 0.0f);
 		
-		validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp.data(), map[pos].size());
+		
+		auto validEigen = data->getValidityEigen(i);
 		
 		
 		// Calculate delta vector
@@ -679,7 +679,8 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 			
 			if(!_verbose && validEigen(n) && last)
 			{
-				std::cout << data->getName(n) << "\t" << delta(n)/*+binOnLoss(n)+binOffLoss(n)*/ << "\t" << v(n) << "\t" << min(n) << "\t" << max(n) << "\n";
+				// TODO: Make this some kind of return instead
+				// std::cout << data->getName(n) << "\t" << delta(n)/*+binOnLoss(n)+binOffLoss(n)*/ << "\t" << v(n) << "\t" << min(n) << "\t" << max(n) << "\n";
 				
 				if( ((v(n) < min(n) || v(n) > max(n)) && validEigen(n)) )
 					success = false;
@@ -690,7 +691,7 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 		if(last)
 			break;
 		
-		std::cout << "\n";
+		// std::cout << "\n";
 	}
 	
 	return success;
