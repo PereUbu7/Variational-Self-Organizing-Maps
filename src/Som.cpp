@@ -119,36 +119,6 @@ double Som::euclidianWeightedDist(
 	
 }
 
-// Returns the Euclidian squared distance between neuron at position pos and vector v.
-// Considers only dimensions where valid is true.
-// All dimensions are weighed individually by weights vector
-double Som::euclidianWeightedDist(
-	const size_t &pos, const Eigen::VectorXf &v, 
-	const std::vector<int> &valid, const std::vector<float> &weights) const
-{
-	// Don't look at dimensions with invalid values
-	auto tmp = std::vector<float>(valid.size());
-	
-	Eigen::ArrayXf sM(sigmaMap[pos].size());
-	Eigen::VectorXf validEigen;
-	
-	for(size_t i = 0; i<valid.size(); ++i)
-	{
-		tmp[i] = (float)valid[i]*weights[i];
-	}
-	
-	for(size_t i = 0;i<static_cast<size_t>(sigmaMap[pos].size()); ++i)
-	{
-		sM(i) = std::max((double)sigmaMap[pos][i], 0.00001);
-	}
-	
-	// validEigen is an Eigen vector with weight if valid and 0 if not
-	validEigen = Eigen::Map<Eigen::VectorXf, Eigen::Unaligned>(tmp.data(), valid.size());
-	
-	// (pos-v)*(pos-v)*weight*valid/sigma2
-	return  (((this->getNeuron(pos) - v).array()/sM).matrix().dot( ((this->getNeuron(pos) - v).array()*validEigen.array()/sM).matrix() ) );
-}
-
 double Som::euclidianWeightedDist(
 	const size_t &pos, const Eigen::VectorXf &v, 
 	const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const
@@ -224,30 +194,6 @@ SomIndex Som::findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, co
 // Only considers valid dimensions with weights
 SomIndex Som::findRestrictedBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, 
 	const int minBmuHits, const Eigen::VectorXf &weights) const
-{
-	auto minDist = this->euclidianWeightedDist(0, v, valid, weights);
-	int minIndex = 0;
-	
-	for(size_t i = 0; i < height*width; ++i)
-	{
-		double currentDist;
-		if( (currentDist = this->euclidianWeightedDist(i, v, valid, weights)) < minDist && bmuHits[i] >= minBmuHits )
-		{
-			minDist = currentDist;
-			minIndex = i;
-		}
-	}
-	
-	
-	SomIndex returnIndex(minIndex % width, minIndex / width );
-	
-	return returnIndex;
-}
-
-// Search through whole map where bmuHits > minBmuHits and return index of neuron that is closest to v.
-// Only considers valid dimensions with weights
-SomIndex Som::findRestrictedBmu(const Eigen::VectorXf &v, const std::vector<int> &valid, 
-	const int minBmuHits, const std::vector<float> &weights) const
 {
 	auto minDist = this->euclidianWeightedDist(0, v, valid, weights);
 	int minIndex = 0;
@@ -426,39 +372,6 @@ std::vector<double> Som::findRestrictedBmd(const Eigen::VectorXf &v, const Eigen
 	
 	// Normalize with respect to C in order to get a distribution
 	for(size_t i = 0; i < height*width; ++i)
-		dist[i] /= C;
-	
-	return dist;
-}
-
-/*				find restricted Best Matching Distribution				*/
-std::vector<double> Som::findRestrictedBmd(const Eigen::VectorXf &v, const std::vector<int> &valid, 
-	int minBmuHits, const std::vector<float> &weights) const
-{
-	std::vector<double> dist(height*width, -1);
-	
-	// Normalization constant
-	double C = 0;
-	
-	for(unsigned int i = 0; i < height*width; i++)
-	{
-		// Restriction
-		if(bmuHits[i] >= minBmuHits)
-		{
-			dist[i] = this->euclidianWeightedDist(i, v, valid, weights);
-			
-			// Transform euclidian distance into a probability measure
-			dist[i] = (double)std::exp( -dist[i]*dist[i]/2 );
-			
-			// Integrate all probabilities
-			C += dist[i];
-		}
-		else
-			dist[i] = 0;
-	}
-	
-	// Normalize with respect to C in order to get a distribution
-	for(unsigned int i = 0; i < height*width; i++)
 		dist[i] /= C;
 	
 	return dist;

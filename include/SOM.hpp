@@ -59,21 +59,12 @@ public:
 	SomIndex findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const;
 	SomIndex findLocalBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const size_t &lastBMUref, const Eigen::VectorXf &weights) const;
 	SomIndex findRestrictedBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const int minBmuHits, const Eigen::VectorXf &weights) const;
-	SomIndex findRestrictedBmu(const Eigen::VectorXf&, const std::vector<int>&, const int, const std::vector<float>&) const;
-	// TODO:
-	std::vector<double> findRestrictedBmd(const Eigen::VectorXf&, const std::vector<int>&, int, const std::vector<float>&) const;
 	std::vector<double> findRestrictedBmd(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, int minBmuHits, const Eigen::VectorXf &weights) const;
 	double euclidianWeightedDist(
 		const SomIndex &pos, 
 		const Eigen::VectorXf &v, 
 		const Eigen::VectorXf &valid, 
 		const Eigen::VectorXf &weights) const;
-	// TO be removed
-	double euclidianWeightedDist(
-		const size_t &pos, 
-		const Eigen::VectorXf&, 
-		const std::vector<int>&, 
-		const std::vector<float>&) const;
 	double euclidianWeightedDist(
 		const size_t &pos, 
 		const Eigen::VectorXf &v, 
