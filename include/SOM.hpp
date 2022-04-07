@@ -62,6 +62,7 @@ public:
 	SomIndex findRestrictedBmu(const Eigen::VectorXf&, const std::vector<int>&, const int, const std::vector<float>&) const;
 	// TODO:
 	std::vector<double> findRestrictedBmd(const Eigen::VectorXf&, const std::vector<int>&, int, const std::vector<float>&) const;
+	std::vector<double> findRestrictedBmd(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, int minBmuHits, const Eigen::VectorXf &weights) const;
 	double euclidianWeightedDist(
 		const SomIndex &pos, 
 		const Eigen::VectorXf &v, 

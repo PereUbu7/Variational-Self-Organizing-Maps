@@ -398,6 +398,38 @@ SomIndex Som::findLocalBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &vali
 	return SomIndex{minIndex % width, minIndex / width};
 }
 
+/*				find restricted Best Matching Distribution				*/
+std::vector<double> Som::findRestrictedBmd(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, 
+	int minBmuHits, const Eigen::VectorXf &weights) const
+{
+	std::vector<double> dist(height*width, -1);
+	
+	// Normalization constant
+	double C = 0;
+	
+	for(size_t i = 0; i < height*width; ++i)
+	{
+		// Restriction
+		if(bmuHits[i] >= minBmuHits)
+		{
+			dist[i] = this->euclidianWeightedDist(i, v, valid, weights);
+			
+			// Transform euclidian distance into a probability measure
+			dist[i] = (double)std::exp( -dist[i]*dist[i]/2 );
+			
+			// Integrate all probabilities
+			C += dist[i];
+		}
+		else
+			dist[i] = 0;
+	}
+	
+	// Normalize with respect to C in order to get a distribution
+	for(size_t i = 0; i < height*width; ++i)
+		dist[i] /= C;
+	
+	return dist;
+}
 
 /*				find restricted Best Matching Distribution				*/
 std::vector<double> Som::findRestrictedBmd(const Eigen::VectorXf &v, const std::vector<int> &valid, 
@@ -476,31 +508,30 @@ double Som::evaluate(const DataSet &data) const
 
 size_t Som::variationalAutoEncoder(const DataSet *data, int minBmuHits) const
 {
-	std::vector<double> probability(getHeight()*getWidth(), 1/(double)(getHeight()*getWidth()));
-	
 	std::random_device rd;
-    std::mt19937 gen(time(NULL));
+    std::mt19937 gen(rd());
 	
 	size_t modelVector{0};
 	
-	for( unsigned int i = 0; i < data->size(); i++ )
+	for( size_t i = 0; i < data->size(); ++i )
 	{
 		
 		// Extract sample vector
 		Eigen::VectorXf v = data->getData(i);
 		
-		std::vector<int> val = data->getValidity(i);
+		auto val = data->getValidityEigen(i).cast<float>();
 		
-		std::vector<float> w = data->getWeights();
+		auto w = data->getWeightsEigen();
 		
 		// Find distribution for sample vector
-		probability = findRestrictedBmd(v, val, minBmuHits, w);
+		auto probability = findRestrictedBmd(v, val, minBmuHits, w);
 		
 		std::discrete_distribution<size_t> d(probability.begin(), probability.end());
 		
+		// TODO: This only outputs a model vector for the last row of the dataset
 		modelVector = d(gen);
 		
-		std::cout << "Model vector: "<< modelVector << " is chosen with probability: " << probability[modelVector] << "\n";
+		// std::cout << "Model vector: "<< modelVector << " is chosen with probability: " << probability[modelVector] << "\n";
 		
 		// Print in an Octave-friendly format
 		//std::cout << "prob" << i << "= [";
@@ -530,9 +561,9 @@ int Som::autoEncoder(const DataSet *data, int minBmuHits) const
 		// Extract sample vector
 		Eigen::VectorXf v = data->getData(i);
 		
-		std::vector<int> val = data->getValidity(i);
+		// std::vector<int> val = data->getValidity(i);
 		
-		std::vector<float> w = data->getWeights();
+		// std::vector<float> w = data->getWeights();
 		
 		// Now we're just getting the bmu to sample from that univariate normal distribution.
 		// What we could do is to take a distribution over model vectors (use variationalAutoEncoder function),
@@ -541,7 +572,7 @@ int Som::autoEncoder(const DataSet *data, int minBmuHits) const
 		
 		// Fixed
 		
-		int bmuInt = variationalAutoEncoder(data, 500);
+		int bmuInt = variationalAutoEncoder(data, minBmuHits);
 		
 		SomIndex bmu(bmuInt % width, bmuInt / width);
 		
@@ -805,8 +836,8 @@ void Som::randomInitialize(int seed, float sigma)
 void Som::updateUMatrix(const DataSet *data)
 {
 	std::vector<double> U(width*height);
-	std::vector<int> val(map[0].size(), 1);
-	std::vector<float> weights(data->getWeights());
+	auto val = Eigen::VectorXf::Constant(map[0].size(), 1);
+	auto weights = data->getWeightsEigen();
 	double diagonalFactor = 0.3;
 	double min = 10000000, 
 			max = 0;
@@ -815,9 +846,9 @@ void Som::updateUMatrix(const DataSet *data)
 	
 	// For each vector in the map, calculate mean distance to closest neighbouring vectors.
 	// Put these mean distances in the U matrix
-	for(unsigned int i = 0; i < height; i++)
+	for(size_t i = 0; i < height; ++i)
 	{
-		for(unsigned int j = 0; j < width; j++)
+		for(size_t j = 0; j < width; ++j)
 		{
 			if( j > 0 && i > 0 && j < (width - 1) && i < (height - 1) ) // Middle part of map
 			{
@@ -902,7 +933,7 @@ void Som::updateUMatrix(const DataSet *data)
 	// Normalize to 0-255 interval
 	//span = max - min;
 	//if(_verbose) std::cout << "Span: " << span << "\nMin: " << min << "\nMax: " << max << "\n";
-	for( unsigned int i = 0; i < uMatrix.size(); i++)
+	for( size_t i = 0; i < uMatrix.size(); ++i)
 	{
 		uMatrix[i] = U[i];
 	}

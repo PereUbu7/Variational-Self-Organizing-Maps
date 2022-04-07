@@ -198,6 +198,32 @@ namespace Perftests
             return endTime - startTime;
         }
         template<size_t NumOfRuns>
+        auto test_findRestrictedBmd()
+        {
+            setup();
+
+            sut.randomInitialize(std::time(NULL), 1);
+
+            auto positions = std::array<size_t, NumOfRuns>();
+            for(auto& element : positions)
+                element = std::rand() % 100*100;
+
+            auto modelVector = Eigen::VectorXf::Random(100);
+            auto validityVector = Eigen::VectorXf::Ones(100);
+            // auto validityVector = std::vector<int>(100);
+            auto weightVector = Eigen::VectorXf::Ones(100);
+            // auto weightVector = std::vector<float>(100);
+
+            auto startTime = high_resolution_clock::now();
+            
+            for (size_t i{0}; i < NumOfRuns; ++i)
+                sut.findRestrictedBmd(modelVector, validityVector, 0, weightVector);
+
+            auto endTime = high_resolution_clock::now();
+
+            return endTime - startTime;
+        }
+        template<size_t NumOfRuns>
         auto test_euclidianWeightedDist()
         {
             setup();
@@ -246,6 +272,50 @@ namespace Perftests
             auto endTime = high_resolution_clock::now();
             return (endTime - startTime) / numberOfRuns;
         }
+
+        auto test_updateUMatrix(const char *dbPath, const char *columnSpecPath)
+        {
+            auto db = DataBase{};
+            auto dbOpenResult = db.open(dbPath);
+            assert(dbOpenResult != 0);
+
+            auto trainingSet = DataSet(columnSpecPath);
+
+            trainingSet.loadDataBase(&db);
+
+            sut = Som{100, 100, trainingSet.vectorLength()};
+
+            sut.randomInitialize(std::time(NULL), 1);
+
+            auto startTime = high_resolution_clock::now();
+            for(size_t run = int{}; run < numberOfRuns; ++run)
+                sut.updateUMatrix(&trainingSet);
+            auto endTime = high_resolution_clock::now();
+            
+            return (endTime - startTime) / numberOfRuns;
+        }
+
+        auto test_variationalAutoEncoder(const char *dbPath, const char *columnSpecPath)
+        {
+            auto db = DataBase{};
+            auto dbOpenResult = db.open(dbPath);
+            assert(dbOpenResult != 0);
+
+            auto trainingSet = DataSet(columnSpecPath);
+
+            trainingSet.loadDataBase(&db);
+
+            sut = Som{100, 100, trainingSet.vectorLength()};
+
+            sut.randomInitialize(std::time(NULL), 1);
+
+            auto startTime = high_resolution_clock::now();
+            for(size_t run = int{}; run < numberOfRuns; ++run)
+                sut.variationalAutoEncoder(&trainingSet, 0);
+            auto endTime = high_resolution_clock::now();
+            
+            return (endTime - startTime) / numberOfRuns;
+        }
     };
 
 }
@@ -258,7 +328,9 @@ int main()
     // printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 0), "Som::train(exponentialWeightDecay)");
     // printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 1), "Som::train(inverseProportionalWeightDecay)");
     // printResultToFile(tester.test_evaluate("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::evaluate()");
-    printResultToFile(tester.test_measureSimilarity("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::measureSimilarity()");
+    // printResultToFile(tester.test_measureSimilarity("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::measureSimilarity()");
+    // printResultToFile(tester.test_updateUMatrix("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::updateUMatrix()");
+    printResultToFile(tester.test_variationalAutoEncoder("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::variationalAutoEncoder()");
 
     // printResultToFile(tester.test_trainSingle<1000>(0), "Som:trainSingle(exponentialWeightDecay) per thousand");
     // printResultToFile(tester.test_trainSingle<1000>(1), "Som:trainSingle(inverseProportionalWeightDecay) per thousand");
@@ -266,4 +338,5 @@ int main()
     // printResultToFile(tester.test_findBmu<1000>(), "Som::findBmu() per thousand");
     // printResultToFile(tester.test_findLocalBmu<1000000>(), "Som::findLocalBmu() per milion");
     // printResultToFile(tester.test_findRestrictedBmu<1000>(), "Som::findRestrictedBmu() per thousand");
+    // printResultToFile(tester.test_findRestrictedBmd<1000>(), "Som::findRestrictedBmd() per thousand");
 }
