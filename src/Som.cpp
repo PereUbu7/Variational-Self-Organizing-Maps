@@ -135,37 +135,37 @@ double Som::euclidianWeightedDist(
 	return  (((this->getNeuron(pos) - v).array()/sM).matrix().dot( ((this->getNeuron(pos) - v).array()*validEigen.array()/sM).matrix() ) );
 }
 
-unsigned int Som::getHeight() const
+size_t Som::getHeight() const noexcept
 {
 	return height;
 }
 
-unsigned int Som::getWidth() const
+size_t Som::getWidth() const noexcept
 {
 	return width;
 }
 
-unsigned int Som::getIndex(SomIndex i) const
+size_t Som::getIndex(SomIndex i) const noexcept
 {
 	return i.getY()*width+i.getX();
 }
 
-Eigen::VectorXf Som::getNeuron(SomIndex i) const
+Eigen::VectorXf Som::getNeuron(SomIndex i) const noexcept
 {
 	return map[i.getY()*width+i.getX()];
 }
 
-Eigen::VectorXf Som::getNeuron(size_t i) const
+Eigen::VectorXf Som::getNeuron(size_t i) const noexcept
 {
 	return map[i];
 }
 
-Eigen::VectorXf Som::getSigmaNeuron(SomIndex i) const
+Eigen::VectorXf Som::getSigmaNeuron(SomIndex i) const noexcept
 {
 	return sigmaMap[i.getY()*width+i.getX()];
 }
 
-Eigen::VectorXf Som::getSigmaNeuron(size_t i) const
+Eigen::VectorXf Som::getSigmaNeuron(size_t i) const noexcept
 {
 	return sigmaMap[i];
 }
@@ -912,7 +912,7 @@ void Som::save(const char *fileName) const
 	fprintf(fp, "# name: som\n");
 	fprintf(fp, "# type: matrix\n");
 	fprintf(fp, "# ndims: 3\n");
-	fprintf(fp, " %u %u %lu\n", this->getWidth(), this->getHeight(), (long unsigned int)map[0].rows());
+	fprintf(fp, " %lu %lu %lu\n", this->getWidth(), this->getHeight(), (long unsigned int)map[0].rows());
 	//fprintf(fp, "Vector length:%lu\n", (long unsigned int)map[0].rows());
 	//fprintf(fp, "Som width:%u\nSom height:%u\n", this->getWidth(), this->getHeight());
 	//fprintf(fp, "Som data:\n");
@@ -930,7 +930,7 @@ void Som::save(const char *fileName) const
 	fprintf(fp, "\n\n# name: sigmaSom\n");
 	fprintf(fp, "# type: matrix\n");
 	fprintf(fp, "# ndims: 3\n");
-	fprintf(fp, " %u %u %lu\n", this->getWidth(), this->getHeight(), (long unsigned int)sigmaMap[0].size());
+	fprintf(fp, " %lu %lu %lu\n", this->getWidth(), this->getHeight(), (long unsigned int)sigmaMap[0].size());
 	//fprintf(fp, "Sigma SOM data:\n");
 	// Print map data
 	for(int i = 0; i<sigmaMap[0].size(); i++)
@@ -944,8 +944,8 @@ void Som::save(const char *fileName) const
 	
 	fprintf(fp, "\n\n# name: weightMap\n");
 	fprintf(fp, "# type: matrix\n");
-	fprintf(fp, "# rows: %u\n", this->getWidth());
-	fprintf(fp, "# columns: %u\n", this->getHeight());
+	fprintf(fp, "# rows: %lu\n", this->getWidth());
+	fprintf(fp, "# columns: %lu\n", this->getHeight());
 	//fprintf(fp, "Weight som data:\n");
 	// Print bmuHits data
 	for(unsigned int j = 0; j<width; j++)
@@ -958,8 +958,8 @@ void Som::save(const char *fileName) const
 	
 	fprintf(fp, "\n\n# name: bmuHits\n");
 	fprintf(fp, "# type: matrix\n");
-	fprintf(fp, "# rows: %u\n", this->getWidth());
-	fprintf(fp, "# columns: %u\n", this->getHeight());
+	fprintf(fp, "# rows: %lu\n", this->getWidth());
+	fprintf(fp, "# columns: %lu\n", this->getHeight());
 	//fprintf(fp, "\nBmuHits data:\n");
 	// Print bmuHits data
 	for(unsigned int j = 0; j<width; j++)
@@ -971,8 +971,8 @@ void Som::save(const char *fileName) const
 	
 	fprintf(fp, "\n\n# name: U\n");
 	fprintf(fp, "# type: matrix\n");
-	fprintf(fp, "# rows: %u\n", this->getWidth());
-	fprintf(fp, "# columns: %u\n", this->getHeight());
+	fprintf(fp, "# rows: %lu\n", this->getWidth());
+	fprintf(fp, "# columns: %lu\n", this->getHeight());
 	//fprintf(fp, "\nU-matrix data:\n");
 	// Print U-matrix data
 	for(unsigned int j = 0; j<width; j++)
