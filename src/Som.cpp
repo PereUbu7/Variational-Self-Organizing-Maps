@@ -472,15 +472,15 @@ double Som::evaluate(const DataSet &data) const
 	Eigen::VectorXf binaryError;
 	Eigen::ArrayXf ones(map[0].size(), 1);
 
-	auto continuous = data.getContinuousEigen();
+	auto continuous = data.getContinuous();
 	
-	auto binaryEigen = data.getBinaryEigen().cast<float>();
+	auto binaryEigen = data.getBinary().cast<float>();
 	
 	for(size_t i = 0; i<data.size(); i++)
 	{
-		auto val = (data.getValidityEigen(i).array()*continuous).cast<float>();
+		auto val = (data.getValidity(i).array()*continuous).cast<float>();
 		
-		SomIndex bmu = this->findBmu(data.getData(i), val.cast<float>(), data.getWeightsEigen());
+		SomIndex bmu = this->findBmu(data.getData(i), val.cast<float>(), data.getWeights());
 		
 		binaryError = (((this->getNeuron(bmu).array().log()*data.getData(i).array())+((ones-this->getNeuron(bmu).array()).log()*(ones-data.getData(i).array())))).array();
 		
@@ -492,7 +492,7 @@ double Som::evaluate(const DataSet &data) const
 		 * Incremental calculation of weighed mean and variance. Tony Finch. University of Cambrige Computing Service. February 2009.
 		 * Equation 4
 		 * Mean of binaryError + continious error */
-		error += (double)1/(i+1)*( this->euclidianWeightedDist(bmu, data.getData(i), val.cast<float>(), data.getWeightsEigen()) + std::sqrt(binaryError.dot(binaryError)) - error );
+		error += (double)1/(i+1)*( this->euclidianWeightedDist(bmu, data.getData(i), val.cast<float>(), data.getWeights()) + std::sqrt(binaryError.dot(binaryError)) - error );
 		
 		//std::cout << "X:" << bmu.getX() << "\tY:" << bmu.getY() << "\tbinError:" << binaryError[6] << "\tv:" << data->getData(i)[6] << "\tmap:" << this->getNeuron(bmu)[6] << "\tbin?:" << binaryEigen[6] << "\tval?:" << validEigen[6] << "\n";
 		//std::cout << "\terror: " << error << "\ti+1:" << i+1 << "\tx_(i+1):" << this->euclidianWeightedDist(bmu, data->getData(i), val, data->getWeights()) << "\tbinary error:" << std::sqrt(binaryError.dot(binaryError)) << "\n";
@@ -519,9 +519,9 @@ size_t Som::variationalAutoEncoder(const DataSet *data, int minBmuHits) const
 		// Extract sample vector
 		Eigen::VectorXf v = data->getData(i);
 		
-		auto val = data->getValidityEigen(i).cast<float>();
+		auto val = data->getValidity(i).cast<float>();
 		
-		auto w = data->getWeightsEigen();
+		auto w = data->getWeights();
 		
 		// Find distribution for sample vector
 		auto probability = findRestrictedBmd(v, val, minBmuHits, w);
@@ -630,8 +630,8 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 	int maxValueDataSetRow = 0;
 	int last = 0;
 	
-	auto binaryEigen = data->getBinaryEigen();
-	auto contEigen = data->getContinuousEigen();
+	auto binaryEigen = data->getBinary();
+	auto contEigen = data->getContinuous();
 	
 	for( size_t i = 0; i < data->size() + 1; i++ )
 	{
@@ -645,7 +645,7 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 		Eigen::VectorXf v = data->getData(i);
 	
 		// Find best matching unit (bmu)
-		SomIndex bmu = findRestrictedBmu(v, data->getValidityEigen(i).cast<float>(), minBmuHits, data->getWeightsEigen());
+		SomIndex bmu = findRestrictedBmu(v, data->getValidity(i).cast<float>(), minBmuHits, data->getWeights());
 		
 		int pos = width*bmu.getY() + bmu.getX();
 
@@ -658,7 +658,7 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 					.select(Eigen::VectorXf::Constant(binaryMap.size(), 1.0f), 0.0f);
 		
 		
-		auto validEigen = data->getValidityEigen(i);
+		auto validEigen = data->getValidity(i);
 		
 		
 		// Calculate delta vector
@@ -837,7 +837,7 @@ void Som::updateUMatrix(const DataSet *data)
 {
 	std::vector<double> U(width*height);
 	auto val = Eigen::VectorXf::Constant(map[0].size(), 1);
-	auto weights = data->getWeightsEigen();
+	auto weights = data->getWeights();
 	double diagonalFactor = 0.3;
 	double min = 10000000, 
 			max = 0;
@@ -951,11 +951,11 @@ void Som::train(DataSet *data, size_t numberOfEpochs, double eta0, double etaDec
 		
 		std::cout << "Epoch: " << i+1 << "/" << numberOfEpochs << "\teta: " << eta << "\tsigma: " << sigma << "\n";
 
-		auto weights = data->getWeightsEigen();
+		auto weights = data->getWeights();
 		
 		for(size_t j = 0; j < data->size(); ++j)
 		{
-			auto pos = trainSingle(data->getData(j), data->getValidityEigen(j).cast<float>(), weights, eta, sigma, data->getLastBMU(j), weightDecayFunction);
+			auto pos = trainSingle(data->getData(j), data->getValidity(j).cast<float>(), weights, eta, sigma, data->getLastBMU(j), weightDecayFunction);
 			
 			addBmu(pos);
 			if( ( data->size() > 100 && (j % (int)(data->size()/100)) == 0 ) || data->size() < 100 )

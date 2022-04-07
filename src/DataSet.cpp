@@ -70,34 +70,18 @@ Eigen::VectorXf DataSet::getData(size_t index) const
 	return data[index];
 }
 
-std::vector<int> DataSet::getValidity(size_t index) const
-{
-	assert(n > index);
-	return valid[index];
-}
-
-const Eigen::VectorXi DataSet::getValidityEigen(size_t index) const
+const Eigen::VectorXi DataSet::getValidity(size_t index) const
 {
 	assert(n > index);
 	return Eigen::Map<const Eigen::VectorXi>(valid[index].data(), valid[index].size());
 }
 
-std::vector<int> DataSet::getBinary() const
-{
-	return binary;
-}
-
-const Eigen::ArrayXi DataSet::getBinaryEigen() const
+const Eigen::ArrayXi DataSet::getBinary() const
 {
 	return Eigen::Map<const Eigen::ArrayXi>(binary.data(), binary.size());
 }
 
-std::vector<int> DataSet::getContinuous() const
-{
-	return continuous;
-}
-
-const Eigen::ArrayXi DataSet::getContinuousEigen() const
+const Eigen::ArrayXi DataSet::getContinuous() const
 {
 	return Eigen::Map<const Eigen::ArrayXi>(continuous.data(), continuous.size());
 }
@@ -114,12 +98,7 @@ std::string DataSet::getName(size_t index) const
 	return variableNames[index];
 }
 
-std::vector<float> DataSet::getWeights() const
-{
-	return weight;
-}
-
-const Eigen::VectorXf DataSet::getWeightsEigen() const
+const Eigen::VectorXf DataSet::getWeights() const
 {
 	return Eigen::Map<const Eigen::VectorXf>(weight.data(), weight.size());
 }

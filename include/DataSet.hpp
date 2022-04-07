@@ -24,14 +24,10 @@ public:
 		DataSet(const char*, bool verbose = false);
 		~DataSet() = default;
 		Eigen::VectorXf getData(size_t) const;
-		std::vector<int> getValidity(size_t) const;
-		const Eigen::VectorXi getValidityEigen(size_t index) const;
-		std::vector<int> getBinary() const;
-		const Eigen::ArrayXi getBinaryEigen() const;
-		std::vector<int> getContinuous() const;
-		const Eigen::ArrayXi getContinuousEigen() const;
-		std::vector<float> getWeights() const;
-		const Eigen::VectorXf getWeightsEigen() const;
+		const Eigen::VectorXi getValidity(size_t index) const;
+		const Eigen::ArrayXi getBinary() const;
+		const Eigen::ArrayXi getContinuous() const;
+		const Eigen::VectorXf getWeights() const;
 		std::string getName(size_t) const;
 		size_t &getLastBMU(size_t);
 		size_t size() const;
