@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 		// Fixa så att denna klarar 1xX map eller Xx1. 
 		// Lägg till en inputparameter för huruvida man vill skapa denna
 		if( somWidth > 2 && somHeight > 2 )
-			test.updateUMatrix(&trainingSet);
+			test.updateUMatrix(trainingSet.getWeights());
 		
 		if(verbose) test.displayUMatrix();
 		

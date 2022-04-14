@@ -47,15 +47,15 @@ protected:
 
 	// Lägg till att ta hänsyn till validitet i functionerna som nu tar del av den variabeln
 public:
-	Som(size_t, size_t, size_t, bool verbose = false);
-	Som(const char *, bool verbose = false);
+	Som(size_t width, size_t height, size_t depth, bool verbose = false);
+	Som(const char *filename, bool verbose = false);
 	~Som() = default;
-	void train(DataSet *, size_t, double, double, double, double, int);
-	double evaluate(const DataSet&) const;
+	void train(DataSet *data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, int weightDecayFunction);
+	double evaluate(const DataSet& dataset) const;
 	SomIndex trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights, const double eta, const double sigma, size_t &lastBMU, const int weightDecayFunction);
-	int measureSimilarity(const DataSet *, int, int) const;
-	int autoEncoder(const DataSet *, int) const;
-	size_t variationalAutoEncoder(const DataSet *, int) const;
+	int measureSimilarity(const DataSet *dataset, int numberOfSigmas, int minBmuHits) const;
+	int autoEncoder(const DataSet *dataset, int minBmuHits) const;
+	size_t variationalAutoEncoder(const DataSet *dataset, int minBmuHits) const;
 	SomIndex findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const;
 	SomIndex findLocalBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const size_t &lastBMUref, const Eigen::VectorXf &weights) const;
 	SomIndex findRestrictedBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const int minBmuHits, const Eigen::VectorXf &weights) const;
@@ -72,19 +72,20 @@ public:
 		const Eigen::VectorXf &weights) const;
 	void display() const;
 	void displayUMatrix() const;
+	const std::vector<double> &getUMatrix() const noexcept;
 	size_t getHeight() const noexcept;
 	size_t getWidth() const noexcept;
-	size_t getIndex(SomIndex) const noexcept;
-	Eigen::VectorXf getNeuron(SomIndex) const noexcept;
-	Eigen::VectorXf getNeuron(size_t) const noexcept;
-	Eigen::VectorXf getSigmaNeuron(SomIndex) const noexcept;
-	Eigen::VectorXf getSigmaNeuron(size_t) const noexcept;
-	void randomInitialize(int, float);
-	void addBmu(SomIndex);
-	void updateUMatrix(const DataSet *data);
-	void save(const char *) const;
-	void load(const char *);
-	Eigen::VectorXf getSizeFromFile(const char *);
+	size_t getIndex(SomIndex index) const noexcept;
+	Eigen::VectorXf getNeuron(SomIndex index) const noexcept;
+	Eigen::VectorXf getNeuron(size_t index) const noexcept;
+	Eigen::VectorXf getSigmaNeuron(SomIndex index) const noexcept;
+	Eigen::VectorXf getSigmaNeuron(size_t index) const noexcept;
+	void randomInitialize(int seed, float sigma);
+	void addBmu(SomIndex position);
+	void updateUMatrix(const Eigen::VectorXf &weights);
+	void save(const char *filename) const;
+	void load(const char *filename);
+	Eigen::VectorXf getSizeFromFile(const char *filename);
 
 	double static calculateNeighbourhoodWeight(
 		const size_t &currentX, const size_t &currentY,

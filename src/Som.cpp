@@ -135,6 +135,11 @@ double Som::euclidianWeightedDist(
 	return  (((this->getNeuron(pos) - v).array()/sM).matrix().dot( ((this->getNeuron(pos) - v).array()*validEigen.array()/sM).matrix() ) );
 }
 
+const std::vector<double> &Som::getUMatrix() const noexcept
+{
+	return uMatrix;
+}
+
 size_t Som::getHeight() const noexcept
 {
 	return height;
@@ -746,11 +751,10 @@ void Som::randomInitialize(int seed, float sigma)
 	}
 }
 
-void Som::updateUMatrix(const DataSet *data)
+void Som::updateUMatrix(const Eigen::VectorXf &weights)
 {
 	std::vector<double> U(width*height);
 	auto val = Eigen::VectorXf::Constant(map[0].size(), 1);
-	auto weights = data->getWeights();
 	double diagonalFactor = 0.3;
 	double min = 10000000, 
 			max = 0;

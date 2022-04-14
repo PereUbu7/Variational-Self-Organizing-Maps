@@ -289,7 +289,7 @@ namespace Perftests
 
             auto startTime = high_resolution_clock::now();
             for(size_t run = int{}; run < numberOfRuns; ++run)
-                sut.updateUMatrix(&trainingSet);
+                sut.updateUMatrix(trainingSet.getWeights());
             auto endTime = high_resolution_clock::now();
             
             return (endTime - startTime) / numberOfRuns;
