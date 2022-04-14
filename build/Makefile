@@ -18,10 +18,10 @@ release: all
 
 all : $(BIN)
 
-libsom.a : DataBase.o DataSet.o Som.o SomIndex.o sqlite3.o
-	ar -rcs libsom.a DataBase.o DataSet.o Som.o SomIndex.o sqlite3.o
-libsom.so : DataBase.o DataSet.o Som.o SomIndex.o sqlite3.o
-	$(CXX) -shared -o libsom.so DataBase.o DataSet.o Som.o SomIndex.o sqlite3.o
+libsom.a : UMatrix.o DataBase.o DataSet.o Som.o SomIndex.o sqlite3.o
+	ar -rcs libsom.a UMatrix.o DataBase.o DataSet.o Som.o SomIndex.o sqlite3.o
+libsom.so : UMatrix.o DataBase.o DataSet.o Som.o SomIndex.o sqlite3.o
+	$(CXX) -shared -o libsom.so UMatrix.o DataBase.o DataSet.o Som.o SomIndex.o sqlite3.o
 DataBase.o : ../src/DataBase.cpp
 	$(CXX) $(CXXFLAGS) -c $^
 DataSet.o : ../src/DataSet.cpp
@@ -29,6 +29,8 @@ DataSet.o : ../src/DataSet.cpp
 Som.o : ../src/Som.cpp
 	$(CXX) $(CXXFLAGS) -c $^
 SomIndex.o : ../src/SomIndex.cpp
+	$(CXX) $(CXXFLAGS) -c $^
+UMatrix.o : ../src/UMatrix.cpp
 	$(CXX) $(CXXFLAGS) -c $^
 
 sqlite3.o : ../extern/sqlite/sqlite3.c

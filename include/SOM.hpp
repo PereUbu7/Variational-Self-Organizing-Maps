@@ -4,6 +4,7 @@
 
 #include "SomIndex.hpp"
 #include "DataSet.hpp"
+#include "UMatrix.hpp"
 
 #include <vector>
 #include "Eigen/Dense"
@@ -72,7 +73,7 @@ public:
 		const Eigen::VectorXf &weights) const;
 	void display() const;
 	void displayUMatrix() const;
-	const std::vector<double> &getUMatrix() const noexcept;
+	UMatrix<double> getUMatrix() const noexcept;
 	size_t getHeight() const noexcept;
 	size_t getWidth() const noexcept;
 	size_t getIndex(SomIndex index) const noexcept;

@@ -135,9 +135,9 @@ double Som::euclidianWeightedDist(
 	return  (((this->getNeuron(pos) - v).array()/sM).matrix().dot( ((this->getNeuron(pos) - v).array()*validEigen.array()/sM).matrix() ) );
 }
 
-const std::vector<double> &Som::getUMatrix() const noexcept
+UMatrix<double> Som::getUMatrix() const noexcept
 {
-	return uMatrix;
+	return UMatrix<double>{uMatrix, width, height};
 }
 
 size_t Som::getHeight() const noexcept
