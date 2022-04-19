@@ -1,35 +1,42 @@
 #include "UMatrix.hpp"
 
-template<typename Precision>
-Precision UMatrix<Precision>::getValueAtIndex(size_t inWidth, size_t inHeight) const
+#include <cassert>
+
+double UMatrix::getValueAtIndex(size_t inWidth, size_t inHeight) const
 {
     auto index = width*inHeight + inWidth;
     assert(index <= data.size());
     return data[index];
 }
 
-template<typename Precision>
-Precision UMatrix<Precision>::getValueAtIndex(SomIndex index) const
+double UMatrix::getValueAtIndex(SomIndex index) const
 {
     auto realIndex = width*index.getY() + index.getX();
     assert(realIndex <= data.size());
     return data[realIndex];
 }
 
-template<typename Precision>
-const std::vector<Precision>& UMatrix<Precision>::getData() const noexcept
+const std::vector<double>& UMatrix::getData() const noexcept
 {
     return data;
 }
 
-template<typename Precision>
-size_t UMatrix<Precision>::getWidth() const noexcept
+size_t UMatrix::getWidth() const noexcept
 {
     return width;
 }
 
-template<typename Precision>
-size_t UMatrix<Precision>::getHeight() const noexcept
+size_t UMatrix::getHeight() const noexcept
 {
     return height;
+}
+
+double UMatrix::getMinValue() const noexcept
+{
+    return *std::min_element(data.begin(), data.end());
+}
+
+double UMatrix::getMaxValue() const noexcept
+{
+    return *std::max_element(data.begin(), data.end());
 }

@@ -135,9 +135,9 @@ double Som::euclidianWeightedDist(
 	return  (((this->getNeuron(pos) - v).array()/sM).matrix().dot( ((this->getNeuron(pos) - v).array()*validEigen.array()/sM).matrix() ) );
 }
 
-UMatrix<double> Som::getUMatrix() const noexcept
+UMatrix Som::getUMatrix() const noexcept
 {
-	return UMatrix<double>{uMatrix, width, height};
+	return UMatrix{uMatrix, width, height};
 }
 
 size_t Som::getHeight() const noexcept
@@ -173,6 +173,28 @@ Eigen::VectorXf Som::getSigmaNeuron(SomIndex i) const noexcept
 Eigen::VectorXf Som::getSigmaNeuron(size_t i) const noexcept
 {
 	return sigmaMap[i];
+}
+
+float Som::getMaxValueOfFeature(size_t modelVectorIndex) const
+{
+	assert(modelVectorIndex < static_cast<size_t>(map.at(0).size()));
+
+	return (*std::max_element(map.begin(), map.end(), 
+		[modelVectorIndex](const auto &a, const auto &b)
+		{ 
+			return a[modelVectorIndex] < b[modelVectorIndex]; 
+		}))[modelVectorIndex];
+}
+
+float Som::getMinValueOfFeature(size_t modelVectorIndex) const
+{
+	assert(modelVectorIndex < static_cast<size_t>(map.at(0).size()));
+
+	return (*std::min_element(map.begin(), map.end(), 
+		[modelVectorIndex](const auto &a, const auto &b)
+		{ 
+			return a[modelVectorIndex] < b[modelVectorIndex]; 
+		}))[modelVectorIndex];
 }
 
 SomIndex Som::findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const

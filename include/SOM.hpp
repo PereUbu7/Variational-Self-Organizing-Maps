@@ -73,7 +73,7 @@ public:
 		const Eigen::VectorXf &weights) const;
 	void display() const;
 	void displayUMatrix() const;
-	UMatrix<double> getUMatrix() const noexcept;
+	UMatrix getUMatrix() const noexcept;
 	size_t getHeight() const noexcept;
 	size_t getWidth() const noexcept;
 	size_t getIndex(SomIndex index) const noexcept;
@@ -81,6 +81,8 @@ public:
 	Eigen::VectorXf getNeuron(size_t index) const noexcept;
 	Eigen::VectorXf getSigmaNeuron(SomIndex index) const noexcept;
 	Eigen::VectorXf getSigmaNeuron(size_t index) const noexcept;
+	float getMaxValueOfFeature(size_t modelVectorIndex) const;
+	float getMinValueOfFeature(size_t modelVectorIndex) const;
 	void randomInitialize(int seed, float sigma);
 	void addBmu(SomIndex position);
 	void updateUMatrix(const Eigen::VectorXf &weights);
