@@ -673,7 +673,7 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 // lastBMU is the index of the BMU that this specific record found last epoch. 
 // It's used as a starting point if we're looking for a local BMU.
 SomIndex Som::trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights, 
-	const double eta, const double sigma, size_t &lastBMU, const int weightDecayFunction)
+	const double eta, const double sigma, size_t &lastBMU, const WeigthDecayFunction weightDecayFunction)
 {
 	// Find best matching unit (bmu)
 	const auto bmu = [this, sigma, v, valid, weights, lastBMU]()
@@ -707,7 +707,7 @@ SomIndex Som::trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid
 			* */
 			
 			// Exponential weight decay function
-			if(weightDecayFunction == 0)
+			if(weightDecayFunction == WeigthDecayFunction::Exponential)
 			{
 				weightMap[j*width + i] += neighbourhoodWeight*eta;
 				map[j*width + i] += neighbourhoodWeight*eta*delta;
@@ -879,7 +879,7 @@ void Som::updateUMatrix(const Eigen::VectorXf &weights)
 }
 
 // Loops through the data set for numberOfEpochs turns while changing eta and sigma accordingly and updates map weights on each turn by calling trainSingle
-void Som::train(DataSet *data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, int weightDecayFunction)
+void Som::train(DataSet *data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, WeigthDecayFunction weightDecayFunction)
 {	
 	for(size_t i = 0; i < numberOfEpochs; ++i)
 	{

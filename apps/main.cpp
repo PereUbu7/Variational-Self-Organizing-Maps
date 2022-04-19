@@ -26,8 +26,7 @@ int main(int argc, char *argv[])
 	double sigma0 = 0;
 	double sigmaDec = 0;
 	double initSigma = 0;
-	
-	int weightDecayFuncion = 0;
+
 	
 	int trainingSOM = 0;
 	int evaluatingSOM = 0;
@@ -110,7 +109,10 @@ int main(int argc, char *argv[])
 		numOfEpochs = std::strtoul(argv[ARG_SOM_EPOCHS], &ptr, 10);
 		initSigma = std::strtod(argv[ARG_SOM_INIT_SIGMA], &ptr);
 		
-		weightDecayFuncion = std::strtoul(argv[ARG_SOM_WEIGHT_DECAY_FUNCTION], &ptr, 10);
+		auto weightDecayFuncionValue = std::strtoul(argv[ARG_SOM_WEIGHT_DECAY_FUNCTION], &ptr, 10);
+		auto weightDecayFuncion = weightDecayFuncionValue == 0 ? 
+			Som::WeigthDecayFunction::Exponential :
+			Som::WeigthDecayFunction::InverseProportional;
 		
 		// Check of any value is zero or not set
 		if( !somHeight || !somWidth || !eta0 || !etaDec || !sigma0 || !sigmaDec || !numOfEpochs || !initSigma )

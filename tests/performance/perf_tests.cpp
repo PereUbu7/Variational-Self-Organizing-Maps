@@ -43,7 +43,7 @@ namespace Perftests
         {
         }
 
-        auto test_train(const char *dbPath, const char *columnSpecPath, int weightDecayFunction)
+        auto test_train(const char *dbPath, const char *columnSpecPath, Som::WeigthDecayFunction weightDecayFunction)
         {
             auto db = DataBase{};
             auto dbOpenResult = db.open(dbPath);
@@ -70,7 +70,7 @@ namespace Perftests
         }
 
         template<size_t NumOfRuns>
-        auto test_trainSingle(const int weightDecayFunction)
+        auto test_trainSingle(const Som::WeigthDecayFunction weightDecayFunction)
         {
             setup();
 
@@ -122,6 +122,9 @@ namespace Perftests
             setup();
 
             auto startTime = high_resolution_clock::now();
+            sut.randomInitialize(1, 1);
+            sut.updateUMatrix(Eigen::VectorXf::Random(100));
+            auto a = sut.getUMatrix();
 
             for (size_t i{0}; i < numberOfRuns; ++i)
                 sut.randomInitialize(1, 1);
@@ -325,15 +328,15 @@ int main()
     auto tester = SomTests{};
 
     printResultToFile(tester.test_randomInitialize(), "Som::randomInitialize()");
-    printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 0), "Som::train(exponentialWeightDecay)");
-    printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", 1), "Som::train(inverseProportionalWeightDecay)");
+    printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", Som::WeigthDecayFunction::Exponential), "Som::train(exponentialWeightDecay)");
+    printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", Som::WeigthDecayFunction::InverseProportional), "Som::train(inverseProportionalWeightDecay)");
     printResultToFile(tester.test_evaluate("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::evaluate()");
     printResultToFile(tester.test_measureSimilarity("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::measureSimilarity()");
     printResultToFile(tester.test_updateUMatrix("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::updateUMatrix()");
     printResultToFile(tester.test_variationalAutoEncoder("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::variationalAutoEncoder()");
 
-    printResultToFile(tester.test_trainSingle<1000>(0), "Som:trainSingle(exponentialWeightDecay) per thousand");
-    printResultToFile(tester.test_trainSingle<1000>(1), "Som:trainSingle(inverseProportionalWeightDecay) per thousand");
+    printResultToFile(tester.test_trainSingle<1000>(Som::WeigthDecayFunction::Exponential), "Som:trainSingle(exponentialWeightDecay) per thousand");
+    printResultToFile(tester.test_trainSingle<1000>(Som::WeigthDecayFunction::InverseProportional), "Som:trainSingle(inverseProportionalWeightDecay) per thousand");
     printResultToFile(tester.test_euclidianWeightedDist<1000000>(), "Som:euclidianWeightedDist() per milion");
     printResultToFile(tester.test_findBmu<1000>(), "Som::findBmu() per thousand");
     printResultToFile(tester.test_findLocalBmu<1000000>(), "Som::findLocalBmu() per milion");
