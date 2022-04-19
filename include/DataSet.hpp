@@ -28,6 +28,7 @@ public:
 		const Eigen::ArrayXi getBinary() const;
 		const Eigen::ArrayXi getContinuous() const;
 		const Eigen::VectorXf getWeights() const;
+		const std::vector<std::string> &getNames() const noexcept;
 		std::string getName(size_t) const;
 		size_t &getLastBMU(size_t);
 		size_t size() const;

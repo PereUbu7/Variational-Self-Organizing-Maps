@@ -92,6 +92,11 @@ size_t &DataSet::getLastBMU(size_t index)
 	return lastBMU[index];
 }
 
+const std::vector<std::string> &DataSet::getNames() const noexcept
+{
+	return variableNames;
+}
+
 std::string DataSet::getName(size_t index) const
 {
 	assert(depth > index);
