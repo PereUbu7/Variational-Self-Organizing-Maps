@@ -52,7 +52,7 @@ public:
 	Som(size_t width, size_t height, size_t depth, bool verbose = false);
 	Som(const char *filename, bool verbose = false);
 	~Som() = default;
-	void train(DataSet *data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, WeigthDecayFunction weightDecayFunction);
+	void train(DataSet &data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, WeigthDecayFunction weightDecayFunction, bool updateUMatrixAfterEpoch = false);
 	double evaluate(const DataSet& dataset) const;
 	SomIndex trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights, const double eta, const double sigma, size_t &lastBMU, const WeigthDecayFunction weightDecayFunction);
 	int measureSimilarity(const DataSet *dataset, int numberOfSigmas, int minBmuHits) const;

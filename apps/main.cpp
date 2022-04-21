@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 		
 		if(verbose) trainingSet.display();
 		
-		test.train(&trainingSet, numOfEpochs, eta0, etaDec, sigma0, sigmaDec, weightDecayFuncion);
+		test.train(trainingSet, numOfEpochs, eta0, etaDec, sigma0, sigmaDec, weightDecayFuncion);
 		
 		if(verbose) test.display();
 		

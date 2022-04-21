@@ -879,7 +879,7 @@ void Som::updateUMatrix(const Eigen::VectorXf &weights)
 }
 
 // Loops through the data set for numberOfEpochs turns while changing eta and sigma accordingly and updates map weights on each turn by calling trainSingle
-void Som::train(DataSet *data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, WeigthDecayFunction weightDecayFunction)
+void Som::train(DataSet &data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, WeigthDecayFunction weightDecayFunction, bool updateUMatrixAfterEpoch)
 {	
 	for(size_t i = 0; i < numberOfEpochs; ++i)
 	{
@@ -890,17 +890,19 @@ void Som::train(DataSet *data, size_t numberOfEpochs, double eta0, double etaDec
 		
 		std::cout << "Epoch: " << i+1 << "/" << numberOfEpochs << "\teta: " << eta << "\tsigma: " << sigma << "\n";
 
-		auto weights = data->getWeights();
+		auto weights = data.getWeights();
 		
-		for(size_t j = 0; j < data->size(); ++j)
+		for(size_t j = 0; j < data.size(); ++j)
 		{
-			auto pos = trainSingle(data->getData(j), data->getValidity(j).cast<float>(), weights, eta, sigma, data->getLastBMU(j), weightDecayFunction);
+			auto pos = trainSingle(data.getData(j), data.getValidity(j).cast<float>(), weights, eta, sigma, data.getLastBMU(j), weightDecayFunction);
 			
 			addBmu(pos);
-			if( ( data->size() > 100 && (j % (int)(data->size()/100)) == 0 ) || data->size() < 100 )
-				std::cout << "\rTraining SOM:" << 100*j/data->size() << "%";
+			if( ( data.size() > 100 && (j % (int)(data.size()/100)) == 0 ) || data.size() < 100 )
+				std::cout << "\rTraining SOM:" << 100*j/data.size() << "%";
 		}
 		std::cout << "\rTraining SOM:100%\n";
+
+		if(updateUMatrixAfterEpoch) updateUMatrix(data.getWeights());
 	}
 }
 
