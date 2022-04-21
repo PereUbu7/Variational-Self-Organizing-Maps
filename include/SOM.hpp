@@ -7,6 +7,7 @@
 #include "UMatrix.hpp"
 
 #include <vector>
+#include <atomic>
 #include "Eigen/Dense"
 
 #define VERSION 1.00
@@ -43,7 +44,8 @@ protected:
 	Eigen::VectorXf weightMap;
 	std::vector<int> bmuHits;
 	std::vector<double> uMatrix;
-	size_t height, width;
+	std::atomic<bool> _isTraining;
+	size_t height, width, depth;
 	bool _verbose;
 
 	// Lägg till att ta hänsyn till validitet i functionerna som nu tar del av den variabeln
@@ -51,6 +53,21 @@ public:
 	enum class WeigthDecayFunction { Exponential, InverseProportional };
 	Som(size_t width, size_t height, size_t depth, bool verbose = false);
 	Som(const char *filename, bool verbose = false);
+	Som(const Som &som) : 
+		map{som.map},
+		sigmaMap{som.sigmaMap},
+		SMap{som.SMap},
+		weightMap{som.weightMap},
+		bmuHits{som.bmuHits},
+		uMatrix{som.uMatrix},
+		_isTraining{},
+		height{som.height},
+		width{som.width},
+		depth{som.depth},
+		_verbose{som._verbose}
+		{
+			_isTraining.store(som._isTraining.load(std::memory_order_seq_cst), std::memory_order_seq_cst);
+		}
 	~Som() = default;
 	void train(DataSet &data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, WeigthDecayFunction weightDecayFunction, bool updateUMatrixAfterEpoch = false);
 	double evaluate(const DataSet& dataset) const;
@@ -84,6 +101,7 @@ public:
 	Eigen::VectorXf getSigmaNeuron(size_t index) const noexcept;
 	float getMaxValueOfFeature(size_t modelVectorIndex) const;
 	float getMinValueOfFeature(size_t modelVectorIndex) const;
+	bool isTraining() const noexcept;
 	void randomInitialize(int seed, float sigma);
 	void addBmu(SomIndex position);
 	void updateUMatrix(const Eigen::VectorXf &weights);
@@ -95,4 +113,21 @@ public:
 		const size_t &currentX, const size_t &currentY,
 		const size_t &bmuX, const size_t &bmuY,
 		const double &currentSigma);
+	
+	Som &operator=(const Som& other)
+	{
+		map = other.map;
+		sigmaMap = other.sigmaMap;
+		SMap = other.SMap;
+		weightMap = other.weightMap;
+		bmuHits = other.bmuHits;
+		uMatrix = other.uMatrix;
+		_isTraining.store(other._isTraining.load(std::memory_order_seq_cst), std::memory_order_seq_cst);
+		height = other.height;
+		width = other.width;
+		depth = other.depth;
+		_verbose = other._verbose;
+
+		return *this;
+	}
 };

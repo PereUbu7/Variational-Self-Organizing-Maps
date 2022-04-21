@@ -38,6 +38,7 @@ Som::Som(size_t inWidth = 1, size_t inHeight = 1, size_t inDepth = 1, bool verbo
 	// Save size of map to object
 	width = inWidth;
 	height = inHeight;
+	depth = inDepth;
 
 }
 
@@ -50,6 +51,8 @@ Som::Som(const char *SOMFileName, bool verbose)
 	initV = getSizeFromFile(SOMFileName);
 	
 	if(_verbose) std::cout << "width: " << width << "\theight: " << height << "\tlength: " << initV.size() << "\n";
+
+	depth = initV.size();
 	
 	// Set map to correct size with every Vector equal to size returned by getSizeFromFile()
 	map.resize(width*height, initV);
@@ -195,6 +198,11 @@ float Som::getMinValueOfFeature(size_t modelVectorIndex) const
 		{ 
 			return a[modelVectorIndex] < b[modelVectorIndex]; 
 		}))[modelVectorIndex];
+}
+
+bool Som::isTraining() const noexcept
+{
+	return _isTraining;
 }
 
 SomIndex Som::findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const
@@ -880,30 +888,41 @@ void Som::updateUMatrix(const Eigen::VectorXf &weights)
 
 // Loops through the data set for numberOfEpochs turns while changing eta and sigma accordingly and updates map weights on each turn by calling trainSingle
 void Som::train(DataSet &data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, WeigthDecayFunction weightDecayFunction, bool updateUMatrixAfterEpoch)
-{	
-	for(size_t i = 0; i < numberOfEpochs; ++i)
+{
+	_isTraining = true;
+	try
 	{
-		auto eta = eta0*std::exp(-etaDecay*i);
-		auto sigma = sigma0*std::exp(-sigmaDecay*i);
-		
-		if(sigma < 1.0) sigma = 1.0;
-		
-		std::cout << "Epoch: " << i+1 << "/" << numberOfEpochs << "\teta: " << eta << "\tsigma: " << sigma << "\n";
-
-		auto weights = data.getWeights();
-		
-		for(size_t j = 0; j < data.size(); ++j)
+		for (size_t i = 0; i < numberOfEpochs; ++i)
 		{
-			auto pos = trainSingle(data.getData(j), data.getValidity(j).cast<float>(), weights, eta, sigma, data.getLastBMU(j), weightDecayFunction);
-			
-			addBmu(pos);
-			if( ( data.size() > 100 && (j % (int)(data.size()/100)) == 0 ) || data.size() < 100 )
-				std::cout << "\rTraining SOM:" << 100*j/data.size() << "%";
-		}
-		std::cout << "\rTraining SOM:100%\n";
+			auto eta = eta0 * std::exp(-etaDecay * i);
+			auto sigma = sigma0 * std::exp(-sigmaDecay * i);
 
-		if(updateUMatrixAfterEpoch) updateUMatrix(data.getWeights());
+			if (sigma < 1.0)
+				sigma = 1.0;
+
+			std::cout << "Epoch: " << i + 1 << "/" << numberOfEpochs << "\teta: " << eta << "\tsigma: " << sigma << "\n";
+
+			auto weights = data.getWeights();
+
+			for (size_t j = 0; j < data.size(); ++j)
+			{
+				auto pos = trainSingle(data.getData(j), data.getValidity(j).cast<float>(), weights, eta, sigma, data.getLastBMU(j), weightDecayFunction);
+
+				addBmu(pos);
+				if ((data.size() > 100 && (j % (int)(data.size() / 100)) == 0) || data.size() < 100)
+					std::cout << "\rTraining SOM:" << 100 * j / data.size() << "%";
+			}
+			std::cout << "\rTraining SOM:100%\n";
+
+			if (updateUMatrixAfterEpoch)
+				updateUMatrix(data.getWeights());
+		}
 	}
+	catch (const std::exception &e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+	_isTraining = false;
 }
 
 void Som::addBmu(SomIndex pos)
