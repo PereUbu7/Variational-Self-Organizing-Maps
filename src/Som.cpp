@@ -16,24 +16,26 @@ Som::Som(size_t inWidth = 1, size_t inHeight = 1, size_t inDepth = 1, bool verbo
 	sigmaMap.resize(inWidth*inHeight, initV);
 	weightMap.resize(inWidth*inHeight);
 	SMap.resize(inWidth*inHeight, initV);
+
+	// Set BMU hits map to zero
+	bmuHits.resize(inWidth*inHeight, 0);
+	
+	// Set U-matrix to zero
+	uMatrix.resize(inWidth*inHeight, 0);
 	
 	for(size_t i = 0; i < inWidth*inHeight; ++i)
 	{
 		// Initialize each element in each neuron to 0
 		for(int n = 0; n < sigmaMap[i].rows(); ++n)
 		{
-			map[i](n) = 0;
-			sigmaMap[i](n) = 0;
-			SMap[i](n) = 0;
+			map[i](n) = 0.0f;
+			sigmaMap[i](n) = 0.0f;
+			SMap[i](n) = 0.0f;
 		}
-		weightMap[i] = 0;
+		weightMap[i] = 0.0f;
+		bmuHits[i] = 0;
+		uMatrix[i] = 0.0;
 	}
-	
-	// Set BMU hits map to zero
-	bmuHits.resize(inWidth*inHeight, 0);
-	
-	// Set U-matrix to zero
-	uMatrix.resize(inWidth*inHeight, 0);
 	
 	// Save size of map to object
 	width = inWidth;
@@ -749,10 +751,15 @@ double Som::calculateNeighbourhoodWeight(
 	const double &currentSigma)
 {
 	// Calculate neighbourhood fundction
-	if (currentSigma > 1)
+	if (currentSigma > 1.0)
 	{
-		return std::exp(-((double)(currentX - (double)bmuX) * (double)(currentX - (double)bmuX) / (double)2 / currentSigma / currentSigma +
-						  (double)(currentY - (double)bmuY) * (double)(currentY - (double)bmuY) / (double)2 / currentSigma / currentSigma));
+		double currentX_d = static_cast<double>(currentX);
+		double currentY_d = static_cast<double>(currentY);
+		double bmuX_d = static_cast<double>(bmuX);
+		double bmuY_d = static_cast<double>(bmuY);
+
+		return std::exp(-((currentX_d - bmuX_d) * (currentX_d - bmuX_d) / 2.0 / currentSigma / currentSigma +
+						  (currentY_d - bmuY_d) * (currentY_d - bmuY_d) / 2.0 / currentSigma / currentSigma));
 	}
 
 	// If sigma is equal or smaller than 1, only update bmu with weight = 1 from neighbourhood function
@@ -776,7 +783,12 @@ void Som::randomInitialize(int seed, float sigma)
 		for(int n = 0; n < map[i].size(); n++)
 		{
 			map[i](n) = (double)((std::rand() % (int)(2000*sigma)) - (1000*sigma))/1000;
+			sigmaMap[i](n) = 0.0f;
+			SMap[i](n) = 0.0f;
 		}
+		weightMap[i] = 0.0f;
+		bmuHits[i] = 0;
+		uMatrix[i] = 0.0;
 		//std::cout << "InitV[" << i << "]: " << map[i] << "\n";
 	}
 }
