@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <atomic>
+#include <mutex>
 #include "Eigen/Dense"
 
 #define VERSION 1.00
@@ -38,9 +39,21 @@
 class Som
 {
 protected:
+	struct TrainingReturnValue
+	{
+		SomIndex bmu;
+		Eigen::VectorXf residual;
+	};
+	struct Metrics
+	{
+		std::vector<float> MeanSquaredError;
+		Metrics() : MeanSquaredError{} {}
+		Metrics(size_t size) : MeanSquaredError(size) {}
+	};
 	std::vector<Eigen::VectorXf> map;
 	std::vector<Eigen::VectorXf> sigmaMap;
 	std::vector<Eigen::VectorXf> SMap;
+	Metrics metrics;
 	Eigen::VectorXf weightMap;
 	std::vector<int> bmuHits;
 	std::vector<double> uMatrix;
@@ -50,28 +63,35 @@ protected:
 
 	// Lägg till att ta hänsyn till validitet i functionerna som nu tar del av den variabeln
 public:
-	enum class WeigthDecayFunction { Exponential, InverseProportional };
+	enum class WeigthDecayFunction
+	{
+		Exponential,
+		InverseProportional
+	};
+	std::mutex metricsMutex;
+
 	Som(size_t width, size_t height, size_t depth, bool verbose = false);
 	Som(const char *filename, bool verbose = false);
-	Som(const Som &som) : 
-		map{som.map},
-		sigmaMap{som.sigmaMap},
-		SMap{som.SMap},
-		weightMap{som.weightMap},
-		bmuHits{som.bmuHits},
-		uMatrix{som.uMatrix},
-		_isTraining{},
-		height{som.height},
-		width{som.width},
-		depth{som.depth},
-		_verbose{som._verbose}
-		{
-			_isTraining.store(som._isTraining.load(std::memory_order_seq_cst), std::memory_order_seq_cst);
-		}
+	Som(const Som &som) : map{som.map},
+						  sigmaMap{som.sigmaMap},
+						  SMap{som.SMap},
+						  metrics{},
+						  weightMap{som.weightMap},
+						  bmuHits{som.bmuHits},
+						  uMatrix{som.uMatrix},
+						  _isTraining{},
+						  height{som.height},
+						  width{som.width},
+						  depth{som.depth},
+						  _verbose{som._verbose},
+						  metricsMutex{}
+	{
+		_isTraining.store(som._isTraining.load(std::memory_order_seq_cst), std::memory_order_seq_cst);
+	}
 	~Som() = default;
 	void train(DataSet &data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, WeigthDecayFunction weightDecayFunction, bool updateUMatrixAfterEpoch = false);
-	double evaluate(const DataSet& dataset) const;
-	SomIndex trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights, const double eta, const double sigma, size_t &lastBMU, const WeigthDecayFunction weightDecayFunction);
+	double evaluate(const DataSet &dataset) const;
+	TrainingReturnValue trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights, const double eta, const double sigma, size_t &lastBMU, const WeigthDecayFunction weightDecayFunction);
 	int measureSimilarity(const DataSet *dataset, int numberOfSigmas, int minBmuHits) const;
 	int autoEncoder(const DataSet *dataset, int minBmuHits) const;
 	size_t variationalAutoEncoder(const DataSet *dataset, int minBmuHits) const;
@@ -80,18 +100,20 @@ public:
 	SomIndex findRestrictedBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const int minBmuHits, const Eigen::VectorXf &weights) const;
 	std::vector<double> findRestrictedBmd(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, int minBmuHits, const Eigen::VectorXf &weights) const;
 	double euclidianWeightedDist(
-		const SomIndex &pos, 
-		const Eigen::VectorXf &v, 
-		const Eigen::VectorXf &valid, 
+		const SomIndex &pos,
+		const Eigen::VectorXf &v,
+		const Eigen::VectorXf &valid,
 		const Eigen::VectorXf &weights) const;
 	double euclidianWeightedDist(
-		const size_t &pos, 
-		const Eigen::VectorXf &v, 
-		const Eigen::VectorXf &valid, 
+		const size_t &pos,
+		const Eigen::VectorXf &v,
+		const Eigen::VectorXf &valid,
 		const Eigen::VectorXf &weights) const;
 	void display() const;
 	void displayUMatrix() const;
 	UMatrix getUMatrix() const noexcept;
+	Eigen::VectorXf getWeigthMap() const noexcept;
+	std::vector<int> getBmuHits() const noexcept;
 	size_t getHeight() const noexcept;
 	size_t getWidth() const noexcept;
 	size_t getIndex(SomIndex index) const noexcept;
@@ -101,6 +123,9 @@ public:
 	Eigen::VectorXf getSigmaNeuron(size_t index) const noexcept;
 	float getMaxValueOfFeature(size_t modelVectorIndex) const;
 	float getMinValueOfFeature(size_t modelVectorIndex) const;
+	float getMaxSigmaOfFeature(size_t modelVectorIndex) const;
+	float getMinSigmaOfFeature(size_t modelVectorIndex) const;
+	Metrics getMetrics() const noexcept;
 	bool isTraining() const noexcept;
 	void randomInitialize(int seed, float sigma);
 	void addBmu(SomIndex position);
@@ -113,8 +138,8 @@ public:
 		const size_t &currentX, const size_t &currentY,
 		const size_t &bmuX, const size_t &bmuY,
 		const double &currentSigma);
-	
-	Som &operator=(const Som& other)
+
+	Som &operator=(const Som &other)
 	{
 		map = other.map;
 		sigmaMap = other.sigmaMap;

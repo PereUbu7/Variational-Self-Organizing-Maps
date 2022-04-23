@@ -145,6 +145,16 @@ UMatrix Som::getUMatrix() const noexcept
 	return UMatrix{uMatrix, width, height};
 }
 
+Eigen::VectorXf Som::getWeigthMap() const noexcept
+{
+	return weightMap;
+}
+
+std::vector<int> Som::getBmuHits() const noexcept
+{
+	return bmuHits;
+}
+
 size_t Som::getHeight() const noexcept
 {
 	return height;
@@ -200,6 +210,33 @@ float Som::getMinValueOfFeature(size_t modelVectorIndex) const
 		{ 
 			return a[modelVectorIndex] < b[modelVectorIndex]; 
 		}))[modelVectorIndex];
+}
+
+float Som::getMaxSigmaOfFeature(size_t modelVectorIndex) const
+{
+	assert(modelVectorIndex < static_cast<size_t>(sigmaMap.at(0).size()));
+
+	return (*std::max_element(sigmaMap.begin(), sigmaMap.end(), 
+		[modelVectorIndex](const auto &a, const auto &b)
+		{ 
+			return a[modelVectorIndex] < b[modelVectorIndex]; 
+		}))[modelVectorIndex];
+}
+
+float Som::getMinSigmaOfFeature(size_t modelVectorIndex) const
+{
+	assert(modelVectorIndex < static_cast<size_t>(sigmaMap.at(0).size()));
+
+	return (*std::min_element(sigmaMap.begin(), sigmaMap.end(), 
+		[modelVectorIndex](const auto &a, const auto &b)
+		{ 
+			return a[modelVectorIndex] < b[modelVectorIndex]; 
+		}))[modelVectorIndex];
+}
+
+Som::Metrics Som::getMetrics() const noexcept
+{
+	return metrics;
 }
 
 bool Som::isTraining() const noexcept
@@ -682,7 +719,7 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 // the map weights with parameters valid, weights, eta, sigma and weightDecayFunction
 // lastBMU is the index of the BMU that this specific record found last epoch. 
 // It's used as a starting point if we're looking for a local BMU.
-SomIndex Som::trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights, 
+Som::TrainingReturnValue Som::trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights, 
 	const double eta, const double sigma, size_t &lastBMU, const WeigthDecayFunction weightDecayFunction)
 {
 	// Find best matching unit (bmu)
@@ -742,7 +779,7 @@ SomIndex Som::trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid
 		}
 	}
 	// Return best matching unit
-	return bmu;
+	return TrainingReturnValue{bmu, getNeuron(bmu) - v};
 }
 
 double Som::calculateNeighbourhoodWeight(
@@ -776,6 +813,8 @@ double Som::calculateNeighbourhoodWeight(
 void Som::randomInitialize(int seed, float sigma)
 {
 	std::srand(seed);
+
+	metrics = Metrics{depth};
 	
 	for(size_t i = 0; i < width*height; i++)
 	{
@@ -904,6 +943,12 @@ void Som::train(DataSet &data, size_t numberOfEpochs, double eta0, double etaDec
 	_isTraining = true;
 	try
 	{
+		/* Reset metrics */
+		metrics.MeanSquaredError = std::vector<float>(numberOfEpochs, 0.0f);
+
+		auto epochSize = data.size();
+		auto weights = data.getWeights();
+
 		for (size_t i = 0; i < numberOfEpochs; ++i)
 		{
 			auto eta = eta0 * std::exp(-etaDecay * i);
@@ -914,16 +959,25 @@ void Som::train(DataSet &data, size_t numberOfEpochs, double eta0, double etaDec
 
 			std::cout << "Epoch: " << i + 1 << "/" << numberOfEpochs << "\teta: " << eta << "\tsigma: " << sigma << "\n";
 
-			auto weights = data.getWeights();
+			float meanSquareError{0.0};
 
-			for (size_t j = 0; j < data.size(); ++j)
+			for (size_t j = 0; j < epochSize; ++j)
 			{
-				auto pos = trainSingle(data.getData(j), data.getValidity(j).cast<float>(), weights, eta, sigma, data.getLastBMU(j), weightDecayFunction);
+				auto [pos, residual] = trainSingle(data.getData(j), data.getValidity(j).cast<float>(), weights, eta, sigma, data.getLastBMU(j), weightDecayFunction);
 
 				addBmu(pos);
+
+				meanSquareError += residual.squaredNorm()/epochSize;
+
 				if ((data.size() > 100 && (j % (int)(data.size() / 100)) == 0) || data.size() < 100)
 					std::cout << "\rTraining SOM:" << 100 * j / data.size() << "%";
 			}
+
+			{
+				const std::lock_guard<std::mutex> lock(metricsMutex);
+				metrics.MeanSquaredError[i] = meanSquareError;
+			}
+
 			std::cout << "\rTraining SOM:100%\n";
 
 			if (updateUMatrixAfterEpoch)
