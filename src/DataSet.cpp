@@ -64,6 +64,17 @@ DataSet::DataSet(const char *fileName, bool verbose)
 		std::cout << "Dataset depth: " << depth << "\n";
 }
 
+const std::vector<DataSet::DataRow> DataSet::getAll() const
+{
+	return allData;
+}
+
+std::vector<DataSet::DataRow> DataSet::getAll()
+{
+	return allData;
+}
+
+
 Eigen::VectorXf DataSet::getData(size_t index) const
 {
 	assert(n > index);
@@ -84,6 +95,11 @@ const Eigen::ArrayXi DataSet::getBinary() const
 const Eigen::ArrayXi DataSet::getContinuous() const
 {
 	return Eigen::Map<const Eigen::ArrayXi>(continuous.data(), continuous.size());
+}
+
+const std::vector<size_t> &DataSet::getLastBMU() const noexcept
+{
+	return lastBMU;
 }
 
 size_t &DataSet::getLastBMU(size_t index)
@@ -124,21 +140,6 @@ void DataSet::addVector(Eigen::VectorXf v)
 		std::cout << "Added vector size does not correspond to data set depth!\n";
 }
 
-void DataSet::addSet(const DataSet &d)
-{
-	if (d.vectorLength() == depth)
-	{
-		data.reserve(n + d.size());
-		for (size_t i = 0; i < d.size(); ++i)
-		{
-			data.push_back(d.getData(i));
-			n += 1;
-		}
-	}
-	else
-		std::cout << "Data set depths do not correspond!\n";
-}
-
 void DataSet::loadDataBase(DataBase *db)
 {
 	const int numberOfRows = db->rows();
@@ -152,6 +153,8 @@ void DataSet::loadDataBase(DataBase *db)
 	data.resize(numberOfRows, initV);
 
 	lastBMU.resize(numberOfRows, 0);
+
+	allData.resize(numberOfRows, DataSet::DataRow{});
 
 	// Shuffle indices for data and valid maps
 	index.resize(numberOfRows);
@@ -196,6 +199,12 @@ void DataSet::loadDataBase(DataBase *db)
 				valid[index[currentRow]][i] = 1;
 			}
 		}
+
+		// Make DataRow point to actual data
+		allData[index[currentRow]].data = &data[index[currentRow]];
+		allData[index[currentRow]].valid = &valid[index[currentRow]];
+		allData[index[currentRow]].lastBMU = &lastBMU[index[currentRow]];
+
 		++currentRow;
 
 		if ((((db->maxId() - db->minId()) > 100 

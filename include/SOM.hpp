@@ -66,7 +66,8 @@ public:
 	enum class WeigthDecayFunction
 	{
 		Exponential,
-		InverseProportional
+		InverseProportional,
+		BatchMap
 	};
 	std::mutex metricsMutex;
 
@@ -90,6 +91,9 @@ public:
 	}
 	~Som() = default;
 	void train(DataSet &data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, WeigthDecayFunction weightDecayFunction, bool updateUMatrixAfterEpoch = false);
+	void trainBasicSom(DataSet &data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, WeigthDecayFunction weightDecayFunction, bool updateUMatrixAfterEpoch = false);
+	void trainBatchSom(DataSet &data, size_t numberOfEpochs, double sigma0, double sigmaDecay, bool updateUMatrixAfterEpoch = false);
+	void trainBatchSomEpoch(DataSet &data, double currentSigma, bool isFirst);
 	double evaluate(const DataSet &dataset) const;
 	TrainingReturnValue trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights, const double eta, const double sigma, size_t &lastBMU, const WeigthDecayFunction weightDecayFunction);
 	int measureSimilarity(const DataSet *dataset, int numberOfSigmas, int minBmuHits) const;
@@ -116,6 +120,7 @@ public:
 	std::vector<int> getBmuHits() const noexcept;
 	size_t getHeight() const noexcept;
 	size_t getWidth() const noexcept;
+	size_t getDepth() const noexcept;
 	size_t getIndex(SomIndex index) const noexcept;
 	Eigen::VectorXf getNeuron(SomIndex index) const noexcept;
 	Eigen::VectorXf getNeuron(size_t index) const noexcept;

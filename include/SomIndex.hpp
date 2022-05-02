@@ -2,6 +2,8 @@
 
 #include <stddef.h>
 
+class Som;
+
 class SomIndex
 {
 	protected:
@@ -9,8 +11,9 @@ class SomIndex
 	
 	public:
 		SomIndex(size_t x, size_t y) noexcept;
+		SomIndex(const Som &map, size_t index) noexcept;
 		~SomIndex() = default;
-		//int getSomIndex(Som);
+		size_t getSomIndex(const Som &som);
 		size_t getX() const noexcept;
 		size_t getY() const noexcept;
 		void setX(size_t index) noexcept;
