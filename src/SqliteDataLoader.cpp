@@ -1,4 +1,4 @@
-#include "Database.hpp"
+#include "SqliteDataLoader.hpp"
 
 #include <iostream>
 #include <cstring>
@@ -20,12 +20,12 @@ int saveElement(void *buff, int argc, char **argv, char **azColName)
 	return 0;
 }
 
-DataBase::~DataBase()
+SqliteDataLoader::~SqliteDataLoader()
 {
 	sqlite3_close(db);
 }
 
-bool DataBase::open(const char *fileName)
+bool SqliteDataLoader::open(const char *fileName)
 {
 	int rc = sqlite3_open_v2(fileName, &db, SQLITE_OPEN_READONLY, NULL);
 	
@@ -43,17 +43,17 @@ bool DataBase::open(const char *fileName)
 	return true;
 }
 
-void DataBase::close()
+void SqliteDataLoader::close()
 {
 	sqlite3_close(db);
 }
 
-int DataBase::getRecord(char *buff[], int row, std::string icanName) const
+int SqliteDataLoader::getRecord(char *buff[], int row, std::string icanName) const
 {
 	return 0;
 }
 
-int DataBase::startTransaction()
+int SqliteDataLoader::startTransaction()
 {
 	char *err_msg;
 	int retValue{};
@@ -67,7 +67,7 @@ int DataBase::startTransaction()
 	return retValue;
 }
 
-int DataBase::endTransaction()
+int SqliteDataLoader::endTransaction()
 {
 	char *err_msg;
 	int retValue{};
@@ -81,7 +81,7 @@ int DataBase::endTransaction()
 	return retValue;
 }
 
-int DataBase::getElement(char *buff, int row, std::string icanName)
+int SqliteDataLoader::getElement(char *buff, int row, std::string icanName)
 {
 	char sql[200];
 	char *err_msg;
@@ -101,7 +101,7 @@ int DataBase::getElement(char *buff, int row, std::string icanName)
 	return(0);
 }
 
-int DataBase::rows()
+int SqliteDataLoader::rows()
 {
 	char *err_msg;
 	char sql[] = "SELECT COUNT(*) FROM Ican;";
@@ -123,7 +123,7 @@ int DataBase::rows()
 	return((int)value);
 }
 
-int DataBase::minId()
+int SqliteDataLoader::minId()
 {
 	char *err_msg;
 	char sql[] = "SELECT MIN(Id) FROM Ican;";
@@ -145,7 +145,7 @@ int DataBase::minId()
 	return((int)value);
 }
 
-int DataBase::maxId()
+int SqliteDataLoader::maxId()
 {
 	char *err_msg;
 	char sql[] = "SELECT MAX(Id) FROM Ican;";
@@ -167,7 +167,7 @@ int DataBase::maxId()
 	return((int)value);
 }
 
-int DataBase::doesExist(int row)
+int SqliteDataLoader::doesExist(int row)
 {
 	char *err_msg;
 	char sql[200];
@@ -193,7 +193,7 @@ int DataBase::doesExist(int row)
 	return((int)value);
 }
 
-int DataBase::getMax(char *buff, std::string icanName)
+int SqliteDataLoader::getMax(char *buff, std::string icanName)
 {
 	char sql[200];
 	char *err_msg;

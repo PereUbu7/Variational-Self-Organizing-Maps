@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Database.hpp"
+#include "IDataLoader.hpp"
 
 #include <vector>
 #include <string>
@@ -45,7 +45,7 @@ public:
 		void addVector(Eigen::VectorXf);
 		void loadTextFile(const char*);
 		void display() const;
-		void loadDataBase(DataBase *db);
+		void loadDataBase(IDataLoader *db);
 		void loadIcanFilter(const char *fileName);
 		size_t vectorLength() const;
 		

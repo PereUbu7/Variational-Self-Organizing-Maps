@@ -1,3 +1,4 @@
+#include "SqliteDataLoader.hpp"
 #include "SOM.hpp"
 
 #include <iostream>
@@ -93,7 +94,7 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 
-	auto db = DataBase{verbose};
+	auto db = SqliteDataLoader{verbose};
 	
 	if( trainingSOM )
 	{

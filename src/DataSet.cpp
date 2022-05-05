@@ -140,7 +140,7 @@ void DataSet::addVector(Eigen::VectorXf v)
 		std::cout << "Added vector size does not correspond to data set depth!\n";
 }
 
-void DataSet::loadDataBase(DataBase *db)
+void DataSet::loadDataBase(IDataLoader *db)
 {
 	const int numberOfRows = db->rows();
 	

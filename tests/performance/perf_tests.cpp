@@ -1,5 +1,5 @@
 #include "SOM.hpp"
-#include "Database.hpp"
+#include "SqliteDataLoader.hpp"
 #include "DataSet.hpp"
 
 #include "dateTimeUtils.hpp"
@@ -45,7 +45,7 @@ namespace Perftests
 
         auto test_train(const char *dbPath, const char *columnSpecPath, Som::WeigthDecayFunction weightDecayFunction)
         {
-            auto db = DataBase{};
+            auto db = SqliteDataLoader{};
             auto dbOpenResult = db.open(dbPath);
             assert(dbOpenResult != 0);
 
@@ -100,7 +100,7 @@ namespace Perftests
 
         auto test_evaluate(const char *dbPath, const char *columnSpecPath)
         {
-            auto db = DataBase{};
+            auto db = SqliteDataLoader{};
             auto dbOpenResult = db.open(dbPath);
             assert(dbOpenResult != 0);
 
@@ -258,7 +258,7 @@ namespace Perftests
 
         auto test_measureSimilarity(const char *dbPath, const char *columnSpecPath)
         {
-            auto db = DataBase{};
+            auto db = SqliteDataLoader{};
             auto dbOpenResult = db.open(dbPath);
             assert(dbOpenResult != 0);
 
@@ -279,7 +279,7 @@ namespace Perftests
 
         auto test_updateUMatrix(const char *dbPath, const char *columnSpecPath)
         {
-            auto db = DataBase{};
+            auto db = SqliteDataLoader{};
             auto dbOpenResult = db.open(dbPath);
             assert(dbOpenResult != 0);
 
@@ -301,7 +301,7 @@ namespace Perftests
 
         auto test_variationalAutoEncoder(const char *dbPath, const char *columnSpecPath)
         {
-            auto db = DataBase{};
+            auto db = SqliteDataLoader{};
             auto dbOpenResult = db.open(dbPath);
             assert(dbOpenResult != 0);
 
