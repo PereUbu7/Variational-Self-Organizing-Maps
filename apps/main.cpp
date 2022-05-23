@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 
-	auto db = SqliteDataLoader{verbose};
+	auto db = SqliteDataLoader("icanNames.txt", verbose);
 	
 	if( trainingSOM )
 	{
@@ -125,11 +125,9 @@ int main(int argc, char *argv[])
 		if( db.open(argv[ARG_DB_FILE]) == 0 )
 			return 0;
 			
-		auto trainingSet = DataSet{"icanNames.txt", verbose};
+		auto trainingSet = DataSet(db);
 		//trainingSet.loadTextFile("7246051 efter rep2.txt");
 		//trainingSet.loadTextFile("7246037 20s.txt");
-		
-		trainingSet.loadDataBase(&db);
 		
 		trainingSet.shuffle();
 		
@@ -157,10 +155,9 @@ int main(int argc, char *argv[])
 		if( db.open(argv[ARG_DB_FILE]) == 0 )
 			return 0;
 			
-		auto devSet = DataSet{"icanNames.txt", verbose};
+		auto devSet = DataSet(db, verbose);
 		
 		//devSet.loadTextFile("7246051 efter rep.txt");
-		devSet.loadDataBase(&db);
 		
 		Som test(argv[ARG_SOM_FILE]);
 		
@@ -178,9 +175,7 @@ int main(int argc, char *argv[])
 		if( db.open(argv[ARG_DB_FILE]) == 0 )
 			return 0;
 			
-		auto testSet = DataSet{"icanNames.txt", verbose};
-		
-		testSet.loadDataBase(&db);
+		auto testSet = DataSet(db, verbose);
 		
 		Som test(argv[ARG_SOM_FILE]);
 		
@@ -193,9 +188,7 @@ int main(int argc, char *argv[])
 		
 		minBmuHits = std::strtoul(argv[ARG_MIN_BMU_HITS], &ptr, 10);
 		
-		auto testSet = DataSet{"icanNames.txt", verbose};
-		
-		testSet.loadDataBase(&db);
+		auto testSet = DataSet(db, verbose);
 		
 		auto test = Som{argv[ARG_SOM_FILE], verbose};
 		success = test.autoEncoder(&testSet, minBmuHits);
@@ -207,9 +200,7 @@ int main(int argc, char *argv[])
 		
 		minBmuHits = std::strtoul(argv[ARG_MIN_BMU_HITS], &ptr, 10);
 		
-		auto testSet = DataSet{"icanNames.txt", verbose};
-		
-		testSet.loadDataBase(&db);
+		auto testSet = DataSet(db, verbose);
 		
 		auto test = Som{argv[ARG_SOM_FILE], verbose};
 		success = test.variationalAutoEncoder(&testSet, minBmuHits);

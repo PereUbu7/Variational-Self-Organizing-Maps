@@ -18,11 +18,13 @@ release: all
 
 all : $(BIN)
 
-libsom.a : UMatrix.o SqliteDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
-	ar -rcs libsom.a UMatrix.o SqliteDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
-libsom.so : UMatrix.o SqliteDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
-	$(CXX) -shared -o libsom.so UMatrix.o SqliteDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
+libsom.a : UMatrix.o SqliteDataLoader.o MnistDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
+	ar -rcs libsom.a UMatrix.o SqliteDataLoader.o MnistDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
+libsom.so : UMatrix.o SqliteDataLoader.o MnistDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
+	$(CXX) -shared -o libsom.so UMatrix.o SqliteDataLoader.o MnistDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
 SqliteDataLoader.o : ../src/SqliteDataLoader.cpp
+	$(CXX) $(CXXFLAGS) -c $^
+MnistDataLoader.o : ../src/MnistDataLoader.cpp
 	$(CXX) $(CXXFLAGS) -c $^
 DataSet.o : ../src/DataSet.cpp
 	$(CXX) $(CXXFLAGS) -c $^

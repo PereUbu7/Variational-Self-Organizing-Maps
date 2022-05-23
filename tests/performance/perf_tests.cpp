@@ -45,13 +45,11 @@ namespace Perftests
 
         auto test_train(const char *dbPath, const char *columnSpecPath, Som::WeigthDecayFunction weightDecayFunction)
         {
-            auto db = SqliteDataLoader{};
+            auto db = SqliteDataLoader(columnSpecPath);
             auto dbOpenResult = db.open(dbPath);
             assert(dbOpenResult != 0);
 
-            auto trainingSet = DataSet(columnSpecPath);
-
-            trainingSet.loadDataBase(&db);
+            auto trainingSet = DataSet(db);
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
@@ -100,13 +98,11 @@ namespace Perftests
 
         auto test_evaluate(const char *dbPath, const char *columnSpecPath)
         {
-            auto db = SqliteDataLoader{};
+            auto db = SqliteDataLoader(columnSpecPath);
             auto dbOpenResult = db.open(dbPath);
             assert(dbOpenResult != 0);
 
-            auto trainingSet = DataSet(columnSpecPath);
-
-            trainingSet.loadDataBase(&db);
+            auto trainingSet = DataSet(db);
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
@@ -214,9 +210,7 @@ namespace Perftests
 
             auto modelVector = Eigen::VectorXf::Random(100);
             auto validityVector = Eigen::VectorXf::Ones(100);
-            // auto validityVector = std::vector<int>(100);
             auto weightVector = Eigen::VectorXf::Ones(100);
-            // auto weightVector = std::vector<float>(100);
 
             auto startTime = high_resolution_clock::now();
             
@@ -258,13 +252,11 @@ namespace Perftests
 
         auto test_measureSimilarity(const char *dbPath, const char *columnSpecPath)
         {
-            auto db = SqliteDataLoader{};
+            auto db = SqliteDataLoader(columnSpecPath);
             auto dbOpenResult = db.open(dbPath);
             assert(dbOpenResult != 0);
 
-            auto trainingSet = DataSet(columnSpecPath);
-
-            trainingSet.loadDataBase(&db);
+            auto trainingSet = DataSet(db);
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
@@ -279,13 +271,11 @@ namespace Perftests
 
         auto test_updateUMatrix(const char *dbPath, const char *columnSpecPath)
         {
-            auto db = SqliteDataLoader{};
+            auto db = SqliteDataLoader(columnSpecPath);
             auto dbOpenResult = db.open(dbPath);
             assert(dbOpenResult != 0);
 
-            auto trainingSet = DataSet(columnSpecPath);
-
-            trainingSet.loadDataBase(&db);
+            auto trainingSet = DataSet(db);
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
@@ -301,13 +291,11 @@ namespace Perftests
 
         auto test_variationalAutoEncoder(const char *dbPath, const char *columnSpecPath)
         {
-            auto db = SqliteDataLoader{};
+            auto db = SqliteDataLoader(columnSpecPath);
             auto dbOpenResult = db.open(dbPath);
             assert(dbOpenResult != 0);
 
-            auto trainingSet = DataSet(columnSpecPath);
-
-            trainingSet.loadDataBase(&db);
+            auto trainingSet = DataSet(db);
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
@@ -327,7 +315,7 @@ int main()
 {
     using namespace Perftests;
     auto tester = SomTests{};
-
+    
     printResultToFile(tester.test_randomInitialize(), "Som::randomInitialize()");
     printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", Som::WeigthDecayFunction::Exponential), "Som::train(exponentialWeightDecay)");
     printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", Som::WeigthDecayFunction::BatchMap), "Som::train(batchMap)");

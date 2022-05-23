@@ -129,7 +129,7 @@ double Som::euclidianWeightedDist(
 	const size_t &pos, const Eigen::VectorXf &v,
 	const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const
 {
-	Eigen::ArrayXf sM(sigmaMap[pos].size());
+ 	Eigen::ArrayXf sM(sigmaMap[pos].size());
 	Eigen::VectorXf validEigen;
 
 	sM = (sigmaMap[pos].array() < 0.00001).select(0.00001, sigmaMap[pos]);
@@ -512,7 +512,7 @@ size_t Som::variationalAutoEncoder(const DataSet *data, int minBmuHits) const
 		// Extract sample vector
 		Eigen::VectorXf v = data->getData(i);
 
-		auto val = data->getValidity(i).cast<float>();
+		Eigen::VectorXf val = data->getValidity(i).cast<float>();
 
 		auto w = data->getWeights();
 

@@ -19,16 +19,19 @@ class DataSet
 		std::vector<Eigen::VectorXf> data;
 		std::vector<std::vector<int>> valid;
 		std::vector<size_t> index;
-		std::vector<std::string> variableNames;
-		std::vector<int> binary;
-		std::vector<int> continuous;
-		std::vector<float> weight;
+
 		std::vector<size_t> lastBMU;
+		IDataLoader &_loader;
 		size_t depth, n;
 		bool _verbose;
 	
 public:
-		DataSet(const char*, bool verbose = false);
+		DataSet(IDataLoader &dataLoader, bool verbose = false) :
+			_loader{dataLoader},
+			_verbose{verbose}
+		{
+			loadData();
+		};
 		~DataSet() = default;
 		const std::vector<DataRow> getAll() const;
 		std::vector<DataRow> getAll();
@@ -45,7 +48,7 @@ public:
 		void addVector(Eigen::VectorXf);
 		void loadTextFile(const char*);
 		void display() const;
-		void loadDataBase(IDataLoader *db);
+		void loadData();
 		void loadIcanFilter(const char *fileName);
 		size_t vectorLength() const;
 		
