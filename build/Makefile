@@ -53,10 +53,12 @@ sqlite : sqlite3.o
 install : 
 	mkdir -p $(RELEASEDIR_HEADER)/libsom/
 	mkdir -p $(RELEASEDIR_HEADER)/libsom/sqlite/
+	mkdir -p $(RELEASEDIR_HEADER)/libsom/mnistReader/
 	cp libsom.so ${RELEASEDIR_LIB}/
 	cp libsom.a ${RELEASEDIR_LIB}/
 	cp ../include/*.hpp $(RELEASEDIR_HEADER)/libsom/
 	cp ../extern/sqlite/sqlite3.h $(RELEASEDIR_HEADER)/libsom/sqlite/
+	cp ../extern/mnistReader/*.hpp $(RELEASEDIR_HEADER)/libsom/mnistReader/
 
 clean :
 	rm -f $(BIN) *.o *.a $(BIN)

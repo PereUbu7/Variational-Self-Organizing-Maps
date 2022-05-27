@@ -726,6 +726,8 @@ void Som::trainBatchSom(DataSet &data, size_t numberOfEpochs, double sigma0, dou
 
 	for (size_t i = 0; i < numberOfEpochs; ++i)
 	{
+		std::cout << "Training VSOM epoch " << i << "/" << numberOfEpochs << '\n';
+		
 		auto sigma = sigma0 * std::exp(-sigmaDecay * i);
 
 		if (sigma < 1.0)
