@@ -129,10 +129,14 @@ const std::vector<float> &SqliteDataLoader::getWeights() const noexcept
 	return _weight;
 }
 
+float &SqliteDataLoader::getWeight(size_t index)
+{
+	return _weight.at(index);
+}
+
 std::string SqliteDataLoader::getName(size_t index) const noexcept
 {
-	assert(_columnNames.size() > index);
-	return _columnNames[index];
+	return _columnNames.at(index);
 }
 
 const std::vector<std::string> &SqliteDataLoader::getNames() const noexcept

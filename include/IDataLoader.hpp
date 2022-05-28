@@ -25,6 +25,7 @@ class IDataLoader
 		virtual bool open(const char *path) = 0;
 		std::vector<RowData> data;
 
+		virtual float &getWeight(size_t index) = 0;
 		virtual const std::vector<float> &getWeights() const noexcept = 0;
 		virtual const std::vector<int> &getBinary() const noexcept = 0;
 		virtual const std::vector<int> &getContinuous() const noexcept = 0;

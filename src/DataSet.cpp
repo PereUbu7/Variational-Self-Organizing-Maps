@@ -64,6 +64,11 @@ const Eigen::VectorXf DataSet::getWeights() const
 	return Eigen::Map<const Eigen::VectorXf>(_loader.getWeights().data(), _loader.getWeights().size());
 }
 
+float &DataSet::getWeight(size_t index)
+{
+	return _loader.getWeight(index);
+}
+
 size_t DataSet::size() const
 {
 	return n;

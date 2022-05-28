@@ -35,6 +35,11 @@ size_t MnistDataLoader::load(std::optional<size_t> maxCount)
     return numberOfSamples;
 }
 
+float &MnistDataLoader::getWeight(size_t index)
+{
+    return _weights.at(index);
+}
+
 const std::vector<float> &MnistDataLoader::getWeights() const noexcept
 {
     return _weights;
@@ -49,9 +54,7 @@ const std::vector<int> &MnistDataLoader::getContinuous() const noexcept
 }
 std::string MnistDataLoader::getName(size_t index) const noexcept
 {
-    assert(index >= 0 && index < 28 * 28);
-
-    return _names[index];
+    return _names.at(index);
 }
 const std::vector<std::string> &MnistDataLoader::getNames() const noexcept
 {

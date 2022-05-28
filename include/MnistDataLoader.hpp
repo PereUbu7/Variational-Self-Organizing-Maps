@@ -38,6 +38,7 @@ public:
 
     size_t load(std::optional<size_t> maxCount = std::nullopt) override;
     bool open(const char *path) override;
+    float &getWeight(size_t index) override;
     const std::vector<float> &getWeights() const noexcept override;
     const std::vector<int> &getBinary() const noexcept override;
     const std::vector<int> &getContinuous() const noexcept override;
