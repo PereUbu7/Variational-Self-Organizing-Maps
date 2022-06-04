@@ -6,6 +6,7 @@
 #include <string>
 #include "Eigen/Dense"
 
+
 class DataSet
 {
 	protected:
@@ -22,16 +23,14 @@ class DataSet
 
 		std::vector<size_t> lastBMU;
 		IDataLoader &_loader;
-		size_t depth, n;
+		size_t depth, n, loadedNumberOfChunks;
 		bool _verbose;
 	
 public:
 		DataSet(IDataLoader &dataLoader, bool verbose = false) :
 			_loader{dataLoader},
 			_verbose{verbose}
-		{
-			loadData();
-		};
+		{};
 		~DataSet() = default;
 		const std::vector<DataRow> getAll() const;
 		std::vector<DataRow> getAll();
@@ -49,9 +48,11 @@ public:
 		void addVector(Eigen::VectorXf);
 		void loadTextFile(const char*);
 		void display() const;
-		void loadData();
+		void loadNextDataFromStream();
 		void loadIcanFilter(const char *fileName);
 		size_t vectorLength() const;
+		bool hasReadWholeDataStream() const noexcept;
+		void resetStreamLoadPosition() noexcept;
 		
 		
 		void shuffle();

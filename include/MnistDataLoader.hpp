@@ -23,7 +23,8 @@ protected:
     void generateNames();
 
 public:
-    MnistDataLoader(bool verbose = false) : 
+    MnistDataLoader(std::optional<size_t> maxLoadCount = std::nullopt, bool verbose = false) : 
+        IDataLoader{maxLoadCount},
         _dataset{}, 
         _weights(28*28, 1.0f),
         _isBinary(28*28, 0),
@@ -36,7 +37,7 @@ public:
     };
     // ~MnistDataLoader() = default override;
 
-    size_t load(std::optional<size_t> maxCount = std::nullopt) override;
+    size_t load() override;
     bool open(const char *path) override;
     float &getWeight(size_t index) override;
     const std::vector<float> &getWeights() const noexcept override;
@@ -45,4 +46,8 @@ public:
     std::string getName(size_t index) const noexcept override;
     const std::vector<std::string> &getNames() const noexcept override;
     size_t getDepth() const noexcept override;
+    bool isAtStartOfDataStream() const noexcept override 
+	{ 
+		return m_currentIndex == 0;
+	}
 };

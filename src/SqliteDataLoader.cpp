@@ -203,10 +203,12 @@ int SqliteDataLoader::getElement(char *buff, int row, std::string icanName)
 	return (0);
 }
 
-size_t SqliteDataLoader::numberOfRows()
+size_t SqliteDataLoader::numberOfRowsToLoad(int minId, int maxId)
 {
 	char *err_msg;
-	char sql[] = "SELECT COUNT(*) FROM Ican;";
+	char sql[200];
+	sprintf(sql, "SELECT COUNT(*) FROM Ican WHERE Id >= \'%d\' AND Id <= \'%d\';", minId, maxId);
+
 	char buff[50];
 	unsigned long value;
 
@@ -315,21 +317,26 @@ int SqliteDataLoader::getMax(char *buff, std::string icanName)
 	return (0);
 }
 
-size_t SqliteDataLoader::load(std::optional<size_t> maxCount)
+size_t SqliteDataLoader::load()
 {
-	totalNumberOfRows = numberOfRows();
-
-	auto numberOfRowsToLoad = maxCount.value_or(totalNumberOfRows) >= totalNumberOfRows ? totalNumberOfRows : maxCount.value();
-
-	data = std::vector<RowData>();
-	data.reserve(numberOfRowsToLoad);
-
 	const auto depthVar = getDepth();
 	int currentRow = 0;
 
 	startTransaction();
-	// Loop over all records in the entire database
-	for (int r = minId(); r < maxId() + 1; ++r)
+
+	int maxIdValue = maxId();
+	int minIdValue = minId();
+
+	currentLoadId = currentLoadId.has_value() ? currentLoadId.value() : minId();
+	int maxLoadId = m_maxLoadCount.has_value() ? 
+						(currentLoadId.value() + static_cast<long>(m_maxLoadCount.value())) > maxIdValue ? maxIdValue : currentLoadId.value() + m_maxLoadCount.value() - 1
+						: maxIdValue;
+
+	totalNumberOfRows = numberOfRowsToLoad(currentLoadId.value(), maxLoadId);
+	data = std::vector<RowData>();
+	data.reserve(totalNumberOfRows);
+
+	while(currentLoadId <= maxLoadId)
 	{
 		auto currentRowData = RowData{Eigen::VectorXf(depthVar), std::vector<int>(depthVar)};
 		// Loop over all columns of record
@@ -337,12 +344,11 @@ size_t SqliteDataLoader::load(std::optional<size_t> maxCount)
 		{
 			char valueBuffer[20];
 
-			if (doesExist(r))
-				getElement(valueBuffer, r, _columnNames[i]);
+			if (doesExist(currentLoadId.value()))
+				getElement(valueBuffer, currentLoadId.value(), _columnNames[i]);
 			else
 			{
 				--i;
-				++r;
 				continue;
 			}
 
@@ -362,17 +368,20 @@ size_t SqliteDataLoader::load(std::optional<size_t> maxCount)
 		data.push_back(std::move(currentRowData));
 
 		++currentRow;
+		currentLoadId.emplace(currentLoadId.value() + 1);
 
-		if ((((maxId() - minId()) > 100 && (r % (int)((maxId() - minId()) / 100)) == 0) || (maxId() - minId()) < 100) && _verbose)
+		if ((((maxLoadId - minIdValue) > 100 && (currentLoadId.value() % (int)((maxLoadId - minIdValue) / 100)) == 0) || (maxLoadId - minIdValue) < 100) && _verbose)
 		{
 			if (_verbose)
-				std::cout << "\rLoading database:" << 100 * r / (maxId() - minId()) << "%";
+				std::cout << "\rLoading database:" << 100 * currentLoadId.value() / (maxLoadId - minIdValue) << "%";
 		}
 	}
 	if (_verbose)
 		std::cout << "\rLoading database:100%\n";
 
 	endTransaction();
+
+	if(currentLoadId > maxIdValue) currentLoadId.reset();
 
 	return currentRow;
 }

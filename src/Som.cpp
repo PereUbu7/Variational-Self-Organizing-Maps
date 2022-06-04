@@ -733,7 +733,13 @@ void Som::trainBatchSom(DataSet &data, size_t numberOfEpochs, double sigma0, dou
 		if (sigma < 1.0)
 			sigma = 1.0;
 
-		trainBatchSomEpoch(data, sigma, i == 0);
+		while(!data.hasReadWholeDataStream())
+		{
+			data.loadNextDataFromStream();
+			trainBatchSomEpoch(data, sigma, i == 0);
+		}
+
+		data.resetStreamLoadPosition();
 
 		if (updateUMatrixAfterEpoch)
 			updateUMatrix(data.getWeights());
@@ -1105,7 +1111,6 @@ void Som::trainBasicSom(DataSet &data, size_t numberOfEpochs, double eta0, doubl
 	/* Reset metrics */
 	metrics.MeanSquaredError = std::vector<float>(numberOfEpochs, 0.0f);
 
-	auto epochSize = data.size();
 	auto weights = data.getWeights();
 
 	for (size_t i = 0; i < numberOfEpochs; ++i)
@@ -1119,29 +1124,39 @@ void Som::trainBasicSom(DataSet &data, size_t numberOfEpochs, double eta0, doubl
 		std::cout << "Epoch: " << i + 1 << "/" << numberOfEpochs << "\teta: " << eta << "\tsigma: " << sigma << "\n";
 
 		float meanSquareError{0.0};
-
-		for (size_t j = 0; j < epochSize; ++j)
+		size_t countDataChunks{0};
+		while(!data.hasReadWholeDataStream())
 		{
-			auto [pos, residual] = trainSingle(data.getData(j), data.getValidity(j).cast<float>(), weights, eta, sigma, data.getLastBMU(j), weightDecayFunction);
+			data.loadNextDataFromStream();
 
-			addBmu(pos);
+			auto epochSize = data.size();
 
-			meanSquareError += residual.squaredNorm() / epochSize;
+			for (size_t j = 0; j < epochSize; ++j)
+			{
+				auto [pos, residual] = trainSingle(data.getData(j), data.getValidity(j).cast<float>(), weights, eta, sigma, data.getLastBMU(j), weightDecayFunction);
 
-			if ((data.size() > 100 && (j % (int)(data.size() / 100)) == 0) || data.size() < 100)
-				std::cout << "\rTraining SOM:" << 100 * j / data.size() << "%";
+				addBmu(pos);
+
+				meanSquareError += residual.squaredNorm() / epochSize;
+
+				if ((data.size() > 100 && (j % (int)(data.size() / 100)) == 0) || data.size() < 100)
+					std::cout << "\rTraining SOM:" << 100 * j / data.size() << "%";
+			}
+
+			++countDataChunks;
 		}
-
+		meanSquareError /= static_cast<float>(countDataChunks);
 		{
 			const std::lock_guard<std::mutex> lock(metricsMutex);
 			metrics.MeanSquaredError[i] = meanSquareError;
 		}
 
-		std::cout << "\rTraining SOM:100%\n";
+		data.resetStreamLoadPosition();
 
 		if (updateUMatrixAfterEpoch)
 			updateUMatrix(data.getWeights());
 	}
+	std::cout << "\rTraining SOM:100%\n";
 }
 
 void Som::addBmu(SomIndex pos)

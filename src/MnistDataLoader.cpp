@@ -12,12 +12,20 @@ bool MnistDataLoader::open(const char *path)
     return true;
 }
 
-size_t MnistDataLoader::load(std::optional<size_t> maxCount)
+size_t MnistDataLoader::load()
 {
-    _dataset = mnist::read_dataset<std::vector, std::vector, uint8_t, uint8_t>(_filePath, maxCount.value_or(0));
+    _dataset = mnist::read_dataset<std::vector, std::vector, uint8_t, uint8_t>(_filePath, m_currentIndex, m_maxLoadCount.value_or(0), m_maxLoadCount.value_or(0));
 
     auto numberOfSamples = _dataset.test_labels.size();
 
+    if(numberOfSamples == 0) 
+    {
+        m_currentIndex = 0;
+        return numberOfSamples;
+    }
+    else if(numberOfSamples > 0) m_currentIndex += numberOfSamples;
+
+    data = std::vector<RowData>();
     data.reserve(numberOfSamples);
 
     for(size_t index{0}; index < numberOfSamples; ++index)

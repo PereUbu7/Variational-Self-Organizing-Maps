@@ -16,12 +16,13 @@ class IDataLoader
 {
 	public:
 		virtual ~IDataLoader() = default;
-		IDataLoader() = default;
+		IDataLoader(std::optional<size_t> maxLoadCount = std::nullopt) 
+			: m_maxLoadCount{maxLoadCount}, m_currentIndex{0} {};
 		IDataLoader(const IDataLoader&) = default;
 		IDataLoader& operator=(const IDataLoader&) = default;
 		IDataLoader(IDataLoader&&) = default;
 		IDataLoader& operator=(IDataLoader&&) = default;
-		virtual size_t load(std::optional<size_t> maxCount = std::nullopt) = 0;
+		virtual size_t load() = 0;
 		virtual bool open(const char *path) = 0;
 		std::vector<RowData> data;
 
@@ -32,4 +33,9 @@ class IDataLoader
 		virtual std::string getName(size_t index) const noexcept = 0;
 		virtual const std::vector<std::string> &getNames() const noexcept = 0;
 		virtual size_t getDepth() const noexcept = 0;
+		virtual bool isAtStartOfDataStream() const noexcept = 0;
+	
+	protected:
+		std::optional<size_t> m_maxLoadCount;
+		size_t m_currentIndex;
 };

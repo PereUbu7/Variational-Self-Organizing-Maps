@@ -19,6 +19,7 @@ protected:
 	bool hasOpenTransaction, hasOpenDatabase;
 	size_t totalNumberOfRows;
 	size_t vectorLength;
+	std::optional<int> currentLoadId;
 
 	void close();
 	int getMax(char *, std::string);
@@ -29,7 +30,7 @@ protected:
 	int maxId();
 	int doesExist(int);
 	int getElement(char *, int, std::string);
-	size_t numberOfRows();
+	size_t numberOfRowsToLoad(int minId, int maxId);
 	void loadColumnSpecData(const std::string &path);
 
 public:
@@ -43,9 +44,11 @@ public:
 		hasOpenTransaction{false},
 		hasOpenDatabase{false},
 		totalNumberOfRows{},
-		vectorLength{columnNames.size()}
+		vectorLength{columnNames.size()},
+		currentLoadId{std::nullopt}
 	{};
-	SqliteDataLoader(const std::string &specFilePath, bool verbose = false) :
+	SqliteDataLoader(const std::string &specFilePath, std::optional<size_t> maxLoadCount = std::nullopt, bool verbose = false) :
+		IDataLoader{maxLoadCount},
 		_columnNames{},
 		_weight{},
 		_isBinary{},
@@ -53,12 +56,13 @@ public:
 		hasOpenTransaction{false},
 		hasOpenDatabase{false},
 		totalNumberOfRows{},
-		vectorLength{0}
+		vectorLength{0},
+		currentLoadId{std::nullopt}
 	{
 		loadColumnSpecData(specFilePath);
 	};
 	~SqliteDataLoader() override;
-	size_t load(std::optional<size_t> maxCount) override;
+	size_t load() override;
 	bool open(const char *dbPath) override;
 	const std::vector<float> &getWeights() const noexcept override;
 	float &getWeight(size_t index) override;
@@ -67,4 +71,8 @@ public:
 	std::string getName(size_t index) const noexcept;
 	const std::vector<std::string> &getNames() const noexcept override;
 	size_t getDepth() const noexcept;
+	bool isAtStartOfDataStream() const noexcept override 
+	{ 
+		return !currentLoadId.has_value();
+	}
 };
