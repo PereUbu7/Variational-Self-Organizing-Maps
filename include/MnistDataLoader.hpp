@@ -9,7 +9,6 @@
 class MnistDataLoader : public IDataLoader
 {
 protected:
-    mnist::MNIST_dataset<std::vector, std::vector<uint8_t, std::allocator<uint8_t>>, uint8_t> _dataset;
     std::vector<float> _weights;
     std::vector<int> _isBinary;
     std::vector<int> _isContinuous;
@@ -25,7 +24,6 @@ protected:
 public:
     MnistDataLoader(std::optional<size_t> maxLoadCount = std::nullopt, bool verbose = false) : 
         IDataLoader{maxLoadCount},
-        _dataset{}, 
         _weights(28*28, 1.0f),
         _isBinary(28*28, 0),
         _isContinuous(28*28, 1),

@@ -103,6 +103,7 @@ namespace Perftests
             assert(dbOpenResult != 0);
 
             auto trainingSet = DataSet(db);
+            trainingSet.loadNextDataFromStream();
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
@@ -257,6 +258,7 @@ namespace Perftests
             assert(dbOpenResult != 0);
 
             auto trainingSet = DataSet(db);
+            trainingSet.loadNextDataFromStream();
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
@@ -276,6 +278,7 @@ namespace Perftests
             assert(dbOpenResult != 0);
 
             auto trainingSet = DataSet(db);
+            trainingSet.loadNextDataFromStream();
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
@@ -296,6 +299,7 @@ namespace Perftests
             assert(dbOpenResult != 0);
 
             auto trainingSet = DataSet(db);
+            trainingSet.loadNextDataFromStream();
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 

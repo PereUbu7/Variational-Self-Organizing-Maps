@@ -29,6 +29,9 @@ class DataSet
 public:
 		DataSet(IDataLoader &dataLoader, bool verbose = false) :
 			_loader{dataLoader},
+			depth{},
+			n{},
+			loadedNumberOfChunks{0},
 			_verbose{verbose}
 		{};
 		~DataSet() = default;

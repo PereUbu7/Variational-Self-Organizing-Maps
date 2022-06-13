@@ -130,19 +130,18 @@ void DataSet::loadNextDataFromStream()
 		index[k] = k;
 	shuffle();
 	
-	for(size_t currentIndex{0}; auto [record, validity] : _loader.data)
+	for(size_t currentIndex{0}; auto &[record, validity] : _loader.data)
 	{
-		data.push_back(std::move(record));
-		valid.push_back(std::move(validity));
+		data.push_back(record);
+		valid.push_back(validity);
 		allData.emplace_back(
-			DataSet::DataRow
-			{
-				&(data.back()), 
-				&(valid.back()), 
-				&(lastBMU[currentIndex++])
-			});
+			&(data.back()), 
+			&(valid.back()), 
+			&(lastBMU[currentIndex++])
+			);
 	}
 	++loadedNumberOfChunks;
+	std::cout << "Loaded " << loadedNumberOfChunks << " number of chunks\n";
 }
 
 // This function should load a csv file into a DataSet.

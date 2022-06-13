@@ -66,6 +66,24 @@ struct MNIST_dataset {
     }
 };
 
+template<typename T>
+T calculateAmountToRead(auto limit, auto skip, T count)
+{
+    if (limit > 0 && count > (limit + skip))
+    {
+        return static_cast<T>(limit);
+    }
+    else if (limit > 0 && count <= (limit + skip))
+    {
+        auto diff = static_cast<long>(count) - static_cast<long>(skip);
+        return static_cast<T>(std::max({diff, 0l}));
+    }
+    else
+    {
+        return count;
+    }
+}
+
 /*!
  * \brief Read a MNIST image file inside the given flat container (ETL)
  * \param images The container to fill with the images
@@ -88,9 +106,7 @@ bool read_mnist_image_file_flat(Container& images, const std::string& path, std:
         //platform-specific
         auto image_buffer = reinterpret_cast<unsigned char*>(buffer.get() + 16);
 
-        if (limit > 0 && count > limit) {
-            count = static_cast<unsigned int>(limit);
-        }
+        count = calculateAmountToRead(limit, start, count);
 
         // Ignore "start" first elements
         image_buffer += start * (rows * columns);
@@ -128,9 +144,7 @@ void read_mnist_image_file(Container<Image>& images, const std::string& path, st
         //platform-specific
         auto image_buffer = reinterpret_cast<unsigned char*>(buffer.get() + 16);
 
-        if (limit > 0 && count > (limit + skip)) {
-            count = static_cast<unsigned int>(limit);
-        }
+        count = calculateAmountToRead(limit, skip, count);
 
         images.reserve(count);
 
@@ -166,9 +180,7 @@ void read_mnist_label_file(Container<Label>& labels, const std::string& path, st
         //platform-specific
         auto label_buffer = reinterpret_cast<unsigned char*>(buffer.get() + 8);
 
-        if (limit > 0 && count > (limit + skip)) {
-            count = static_cast<unsigned int>(limit);
-        }
+        count = calculateAmountToRead(limit, skip, count);
 
         labels.resize(count);
 

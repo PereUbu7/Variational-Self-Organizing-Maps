@@ -14,15 +14,11 @@ bool MnistDataLoader::open(const char *path)
 
 size_t MnistDataLoader::load()
 {
-    _dataset = mnist::read_dataset<std::vector, std::vector, uint8_t, uint8_t>(_filePath, m_currentIndex, m_maxLoadCount.value_or(0), m_maxLoadCount.value_or(0));
+    auto dataset = mnist::read_dataset<std::vector, std::vector, uint8_t, uint8_t>(_filePath, m_currentIndex, m_maxLoadCount.value_or(0), m_maxLoadCount.value_or(0));
 
-    auto numberOfSamples = _dataset.test_labels.size();
+    auto numberOfSamples = dataset.training_labels.size();
 
-    if(numberOfSamples == 0) 
-    {
-        m_currentIndex = 0;
-        return numberOfSamples;
-    }
+    if(numberOfSamples == 0) m_currentIndex = 0;
     else if(numberOfSamples > 0) m_currentIndex += numberOfSamples;
 
     data = std::vector<RowData>();
@@ -31,13 +27,12 @@ size_t MnistDataLoader::load()
     for(size_t index{0}; index < numberOfSamples; ++index)
     {
         Eigen::VectorXf imageValues = Eigen::Map<Eigen::Matrix<uint8_t, Eigen::Dynamic, 1>>(
-            _dataset.test_images.at(index).data(), 
-            _dataset.test_images.at(index).size()).cast<float>();
-        data.emplace_back(RowData
-        {
-           imageValues,
-           std::vector<int>(28*28, 1) 
-        });
+            dataset.training_images.at(index).data(), 
+            dataset.training_images.at(index).size()).cast<float>();
+        data.emplace_back(
+            imageValues,
+            std::vector<int>(28*28, 1) 
+        );
     }
 
     return numberOfSamples;
