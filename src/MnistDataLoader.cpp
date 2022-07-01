@@ -13,7 +13,7 @@ bool MnistDataLoader::open(const char *path)
     return true;
 }
 
-std::vector<RowData> MnistDataLoader::getPreview(size_t count) const
+std::vector<RowData> MnistDataLoader::getPreview(size_t count)
 {
     auto dataset = mnist::read_dataset<std::vector, std::vector, uint8_t, uint8_t>(_filePath, 0, count, count);
     auto previewData = std::vector<RowData>();

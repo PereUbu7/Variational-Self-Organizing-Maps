@@ -319,33 +319,47 @@ int SqliteDataLoader::getMax(char *buff, std::string icanName)
 
 size_t SqliteDataLoader::load()
 {
-	const auto depthVar = getDepth();
-	int currentRow = 0;
+	auto [loadedData, currentId, maxId] = fetchData(currentLoadId, m_maxLoadCount);
+
+	data = loadedData;
+	currentLoadId = currentId;
+
+	if (_verbose)
+		std::cout << "\rLoading database:100%\n";
+
+	if(currentLoadId > maxId) currentLoadId.reset();
+
+	return data.size();
+}
+
+std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetchData(std::optional<int> currentId, std::optional<size_t> maxCount)
+{
+	const auto depth = getDepth();
 
 	startTransaction();
 
 	int maxIdValue = maxId();
-	int minIdValue = minId();
 
-	currentLoadId = currentLoadId.has_value() ? currentLoadId.value() : minId();
-	int maxLoadId = m_maxLoadCount.has_value() ? 
-						(currentLoadId.value() + static_cast<long>(m_maxLoadCount.value())) > maxIdValue ? maxIdValue : currentLoadId.value() + m_maxLoadCount.value() - 1
+	currentId = currentId.has_value() ? currentId.value() : minId();
+	int maxLoadId = maxCount.has_value() ? 
+						(currentId.value() + static_cast<long>(maxCount.value())) > maxIdValue ? maxIdValue : currentId.value() + maxCount.value() - 1
 						: maxIdValue;
+	
+	totalNumberOfRows = numberOfRowsToLoad(currentId.value(), maxLoadId);
 
-	totalNumberOfRows = numberOfRowsToLoad(currentLoadId.value(), maxLoadId);
-	data = std::vector<RowData>();
-	data.reserve(totalNumberOfRows);
+	auto newData = std::vector<RowData>();
+	newData.reserve(totalNumberOfRows);
 
-	while(currentLoadId <= maxLoadId)
+	while(currentId <= maxLoadId)
 	{
-		auto currentRowData = RowData{Eigen::VectorXf(depthVar), std::vector<int>(depthVar)};
+		auto currentRowData = RowData{Eigen::VectorXf(depth), std::vector<int>(depth)};
 		// Loop over all columns of record
-		for (size_t i = 0; i < depthVar; i++)
+		for (size_t i = 0; i < depth; i++)
 		{
 			char valueBuffer[20];
 
-			if (doesExist(currentLoadId.value()))
-				getElement(valueBuffer, currentLoadId.value(), _columnNames[i]);
+			if (doesExist(currentId.value()))
+				getElement(valueBuffer, currentId.value(), _columnNames[i]);
 			else
 			{
 				--i;
@@ -365,23 +379,18 @@ size_t SqliteDataLoader::load()
 			}
 		}
 
-		data.push_back(std::move(currentRowData));
+		newData.push_back(std::move(currentRowData));
 
-		++currentRow;
-		currentLoadId.emplace(currentLoadId.value() + 1);
-
-		if ((((maxLoadId - minIdValue) > 100 && (currentLoadId.value() % (int)((maxLoadId - minIdValue) / 100)) == 0) || (maxLoadId - minIdValue) < 100) && _verbose)
-		{
-			if (_verbose)
-				std::cout << "\rLoading database:" << 100 * currentLoadId.value() / (maxLoadId - minIdValue) << "%";
-		}
+		currentId.emplace(currentId.value() + 1);
 	}
-	if (_verbose)
-		std::cout << "\rLoading database:100%\n";
 
 	endTransaction();
 
-	if(currentLoadId > maxIdValue) currentLoadId.reset();
+	return std::make_tuple(newData, currentId, maxIdValue);
+}
 
-	return currentRow;
+std::vector<RowData> SqliteDataLoader::getPreview(size_t count)
+{
+	auto [loadedData, currentId, maxId] = fetchData(std::nullopt, 100);
+	return loadedData;
 }

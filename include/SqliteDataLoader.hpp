@@ -32,6 +32,7 @@ protected:
 	int getElement(char *, int, std::string);
 	size_t numberOfRowsToLoad(int minId, int maxId);
 	void loadColumnSpecData(const std::string &path);
+	std::tuple<std::vector<RowData>, std::optional<int>, int> fetchData(std::optional<int> startId, std::optional<size_t> maxCount);
 
 public:
 	SqliteDataLoader(std::vector<std::string> columnNames, std::vector<float> weights, std::vector<int> isBinary, bool verbose = false) : 
@@ -63,7 +64,7 @@ public:
 	};
 	~SqliteDataLoader() override;
 	size_t load() override;
-	std::vector<RowData> getPreview(size_t count) const override;
+	std::vector<RowData> getPreview(size_t count) override;
 	bool open(const char *dbPath) override;
 	const std::vector<float> &getWeights() const noexcept override;
 	float &getWeight(size_t index) override;

@@ -23,7 +23,7 @@ class IDataLoader
 		IDataLoader(IDataLoader&&) = default;
 		IDataLoader& operator=(IDataLoader&&) = default;
 		virtual size_t load() = 0;
-		virtual std::vector<RowData> getPreview(size_t count) const = 0;
+		virtual std::vector<RowData> getPreview(size_t count) = 0;
 		virtual bool open(const char *path) = 0;
 		std::vector<RowData> data;
 

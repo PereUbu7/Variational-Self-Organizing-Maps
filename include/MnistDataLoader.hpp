@@ -36,7 +36,7 @@ public:
     // ~MnistDataLoader() = default override;
 
     size_t load() override;
-    std::vector<RowData> getPreview(size_t count) const override;
+    std::vector<RowData> getPreview(size_t count) override;
     bool open(const char *path) override;
     float &getWeight(size_t index) override;
     const std::vector<float> &getWeights() const noexcept override;
