@@ -15,6 +15,21 @@ std::vector<DataSet::DataRow> DataSet::getAll()
 	return allData;
 }
 
+std::vector<Eigen::VectorXf> DataSet::getPreviewData(size_t count) const
+{
+	auto data = _loader.getPreview(count);
+
+	auto previewData = std::vector<Eigen::VectorXf>();
+	previewData.reserve(data.size());
+
+	for(auto item : data)
+	{
+		previewData.emplace_back(
+			item.values
+		);
+	}
+	return previewData;
+}
 
 Eigen::VectorXf DataSet::getData(size_t index) const
 {

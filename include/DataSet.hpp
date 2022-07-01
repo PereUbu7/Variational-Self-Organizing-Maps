@@ -37,7 +37,8 @@ public:
 		~DataSet() = default;
 		const std::vector<DataRow> getAll() const;
 		std::vector<DataRow> getAll();
-		Eigen::VectorXf getData(size_t) const;
+		std::vector<Eigen::VectorXf> getPreviewData(size_t count) const;
+		Eigen::VectorXf getData(size_t index) const;
 		const Eigen::VectorXi getValidity(size_t index) const;
 		const Eigen::ArrayXi getBinary() const;
 		const Eigen::ArrayXi getContinuous() const;

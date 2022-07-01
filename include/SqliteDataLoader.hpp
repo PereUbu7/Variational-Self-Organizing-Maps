@@ -63,6 +63,7 @@ public:
 	};
 	~SqliteDataLoader() override;
 	size_t load() override;
+	std::vector<RowData> getPreview(size_t count) const override;
 	bool open(const char *dbPath) override;
 	const std::vector<float> &getWeights() const noexcept override;
 	float &getWeight(size_t index) override;

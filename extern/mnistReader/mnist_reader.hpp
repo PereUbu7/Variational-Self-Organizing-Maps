@@ -78,6 +78,10 @@ T calculateAmountToRead(auto limit, auto skip, T count)
         auto diff = static_cast<long>(count) - static_cast<long>(skip);
         return static_cast<T>(std::max({diff, 0l}));
     }
+    else if (skip >= count)
+    {
+        return 0;
+    }
     else
     {
         return count;

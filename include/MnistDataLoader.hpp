@@ -24,9 +24,9 @@ protected:
 public:
     MnistDataLoader(std::optional<size_t> maxLoadCount = std::nullopt, bool verbose = false) : 
         IDataLoader{maxLoadCount},
-        _weights(28*28, 1.0f),
-        _isBinary(28*28, 0),
-        _isContinuous(28*28, 1),
+        _weights(28*28 + 10, 1.0f),
+        _isBinary(28*28 + 10, 0),
+        _isContinuous(28*28 + 10, 1),
         _names{},
         _filePath{}, 
         _verbose{verbose} 
@@ -36,6 +36,7 @@ public:
     // ~MnistDataLoader() = default override;
 
     size_t load() override;
+    std::vector<RowData> getPreview(size_t count) const override;
     bool open(const char *path) override;
     float &getWeight(size_t index) override;
     const std::vector<float> &getWeights() const noexcept override;
