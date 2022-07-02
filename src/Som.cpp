@@ -731,12 +731,23 @@ void Som::trainBatchSom(DataSet &data, size_t numberOfEpochs, double sigma0, dou
 		auto sigma = sigma0 * std::exp(-sigmaDecay * i);
 
 		if (sigma < 1.0)
-			sigma = 1.0;
+			return;
 
+
+		auto meanSquareError = float{0.0f};
+		auto countDataChunks = size_t{0};
 		while(!data.hasReadWholeDataStream())
 		{
 			data.loadNextDataFromStream();
-			trainBatchSomEpoch(data, sigma, i == 0);
+			meanSquareError += trainBatchSomEpoch(data, sigma, i == 0);
+
+			++countDataChunks;
+		}
+
+		meanSquareError /= static_cast<float>(countDataChunks);
+		{
+			const std::lock_guard<std::mutex> lock(metricsMutex);
+			metrics.MeanSquaredError[i] = meanSquareError;
 		}
 
 		data.resetStreamLoadPosition();
@@ -746,9 +757,11 @@ void Som::trainBatchSom(DataSet &data, size_t numberOfEpochs, double sigma0, dou
 	}
 }
 
-void Som::trainBatchSomEpoch(DataSet &dataset, double currentSigma, bool isFirst)
+float Som::trainBatchSomEpoch(DataSet &dataset, double currentSigma, bool isFirst)
 {
+	auto meanSquareError = std::atomic<float>{0.0f};
 	auto wholeDataset = dataset.getAll();
+	auto epochSize = wholeDataset.size();
 	// Assign a som neuron to each data row
 	if (isFirst)
 	{
@@ -756,7 +769,7 @@ void Som::trainBatchSomEpoch(DataSet &dataset, double currentSigma, bool isFirst
 			std::execution::par_unseq,
 			wholeDataset.begin(),
 			wholeDataset.end(),
-			[this, &dataset](auto data)
+			[this, &dataset, &meanSquareError, epochSize](auto data)
 			{
 				auto valid = Eigen::Map<const Eigen::VectorXi>(data.valid->data(), data.valid->size()).cast<float>();
 				auto index = findBmu(
@@ -767,6 +780,9 @@ void Som::trainBatchSomEpoch(DataSet &dataset, double currentSigma, bool isFirst
 
 				*data.lastBMU = index;
 				bmuHits[index] += 1;
+
+				auto residual = this->getNeuron(index) - *data.data;
+				meanSquareError.fetch_add(residual.squaredNorm() / epochSize);
 			});
 	}
 	else
@@ -775,7 +791,7 @@ void Som::trainBatchSomEpoch(DataSet &dataset, double currentSigma, bool isFirst
 			std::execution::par_unseq,
 			wholeDataset.begin(),
 			wholeDataset.end(),
-			[this, &dataset](auto data)
+			[this, &dataset, &meanSquareError, epochSize](auto data)
 			{
 				auto index = this->findLocalBmu(
 									 *data.data,
@@ -786,6 +802,9 @@ void Som::trainBatchSomEpoch(DataSet &dataset, double currentSigma, bool isFirst
 
 				*data.lastBMU = index;
 				bmuHits[index] += 1;
+
+				auto residual = this->getNeuron(index) - *data.data;
+				meanSquareError.fetch_add(residual.squaredNorm() / epochSize);
 			});
 	}
 
@@ -846,12 +865,16 @@ void Som::trainBatchSomEpoch(DataSet &dataset, double currentSigma, bool isFirst
 				/* Eq. 68 */
 				currentModelSigma = currentModelSigma + currentWeight * (*(datapoint.data) - lastModel).array() * ((*(datapoint.data) - currentModel).array());
 			}
-			neuron = currentModel;
 
+			neuron = currentModel;
+	
 			/* Eq. 69 */
 			sigmaMap[index] = (currentModelSigma / sumOfWeights).sqrt().matrix();
+			
 			weightMap[index] = sumOfWeights;
 		});
+	
+	return meanSquareError;
 }
 
 // Trains on a single data point, i.e. a single record vector v is used to update

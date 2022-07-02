@@ -93,7 +93,10 @@ public:
 	void train(DataSet &data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, WeigthDecayFunction weightDecayFunction, bool updateUMatrixAfterEpoch = false);
 	void trainBasicSom(DataSet &data, size_t numberOfEpochs, double eta0, double etaDecay, double sigma0, double sigmaDecay, WeigthDecayFunction weightDecayFunction, bool updateUMatrixAfterEpoch = false);
 	void trainBatchSom(DataSet &data, size_t numberOfEpochs, double sigma0, double sigmaDecay, bool updateUMatrixAfterEpoch = false);
-	void trainBatchSomEpoch(DataSet &data, double currentSigma, bool isFirst);
+	/*
+		Returns mean squre error of epoch data 
+	*/
+	float trainBatchSomEpoch(DataSet &data, double currentSigma, bool isFirst);
 	double evaluate(const DataSet &dataset) const;
 	TrainingReturnValue trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights, const double eta, const double sigma, size_t &lastBMU, const WeigthDecayFunction weightDecayFunction);
 	int measureSimilarity(const DataSet *dataset, int numberOfSigmas, int minBmuHits) const;
