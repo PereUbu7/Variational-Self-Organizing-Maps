@@ -43,12 +43,14 @@ protected:
 	{
 		SomIndex bmu;
 		Eigen::VectorXf residual;
+		float distanceError;
 	};
 	struct Metrics
 	{
 		std::vector<float> MeanSquaredError;
-		Metrics() : MeanSquaredError{} {}
-		Metrics(size_t size) : MeanSquaredError(size) {}
+		std::vector<float> DistanceError;
+		Metrics() : MeanSquaredError{}, DistanceError{} {}
+		Metrics(size_t size) : MeanSquaredError(size), DistanceError(size) {}
 	};
 	std::vector<Eigen::VectorXf> map;
 	std::vector<Eigen::VectorXf> sigmaMap;

@@ -720,7 +720,7 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, int minBmuHits)
 void Som::trainBatchSom(DataSet &data, size_t numberOfEpochs, double sigma0, double sigmaDecay, bool updateUMatrixAfterEpoch)
 {
 	/* Reset metrics */
-	metrics.MeanSquaredError = std::vector<float>(numberOfEpochs, 0.0f);
+	metrics = Som::Metrics(numberOfEpochs);
 
 	auto weights = data.getWeights();
 
@@ -940,7 +940,7 @@ Som::TrainingReturnValue Som::trainSingle(const Eigen::VectorXf &v, const Eigen:
 		}
 	}
 	// Return best matching unit
-	return TrainingReturnValue{bmu, getNeuron(bmu) - v};
+	return TrainingReturnValue{bmu, getNeuron(bmu) - v, static_cast<float>(euclidianWeightedDist(bmu, v, valid, weights))};
 }
 
 double Som::calculateNeighbourhoodWeight(
@@ -1132,7 +1132,7 @@ void Som::trainBasicSom(DataSet &data, size_t numberOfEpochs, double eta0, doubl
 {
 
 	/* Reset metrics */
-	metrics.MeanSquaredError = std::vector<float>(numberOfEpochs, 0.0f);
+	metrics = Som::Metrics(numberOfEpochs);
 
 	auto weights = data.getWeights();
 
