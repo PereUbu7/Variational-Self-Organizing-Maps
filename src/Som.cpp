@@ -1156,7 +1156,7 @@ void Som::trainBasicSom(DataSet &data, size_t numberOfEpochs, double eta0, doubl
 
 			for (size_t j = 0; j < epochSize; ++j)
 			{
-				auto [pos, residual] = trainSingle(data.getData(j), data.getValidity(j).cast<float>(), weights, eta, sigma, data.getLastBMU(j), weightDecayFunction);
+				auto [pos, residual, distanceError] = trainSingle(data.getData(j), data.getValidity(j).cast<float>(), weights, eta, sigma, data.getLastBMU(j), weightDecayFunction);
 
 				addBmu(pos);
 
