@@ -51,6 +51,7 @@ size_t MnistDataLoader::load()
     auto numberOfSamples = dataset.training_labels.size();
 
     if(numberOfSamples == 0) m_currentIndex = 0;
+    else if(numberOfSamples >= 60000) m_currentIndex = 0;
     else if(numberOfSamples > 0) m_currentIndex += numberOfSamples;
 
     data = std::vector<RowData>();
