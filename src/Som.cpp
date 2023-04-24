@@ -250,6 +250,14 @@ bool Som::isTraining() const noexcept
 	return _isTraining;
 }
 
+SomIndex Som::findBmu(const Eigen::VectorXf &v) const
+{
+	auto valid = Eigen::VectorXf::Ones(v.size());
+	auto weights = Eigen::VectorXf::Ones(v.size());
+	
+	return findBmu(v, valid, weights);
+}
+
 SomIndex Som::findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const
 {
 	auto minDist = this->euclidianWeightedDist(0, v, valid, weights);

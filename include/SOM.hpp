@@ -104,6 +104,7 @@ public:
 	int measureSimilarity(const DataSet *dataset, int numberOfSigmas, int minBmuHits) const;
 	int autoEncoder(const DataSet *dataset, int minBmuHits) const;
 	size_t variationalAutoEncoder(const DataSet *dataset, int minBmuHits) const;
+	SomIndex findBmu(const Eigen::VectorXf &v) const;
 	SomIndex findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const;
 	SomIndex findLocalBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const size_t &lastBMUref, const Eigen::VectorXf &weights) const;
 	SomIndex findRestrictedBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const int minBmuHits, const Eigen::VectorXf &weights) const;
