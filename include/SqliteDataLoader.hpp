@@ -36,6 +36,7 @@ protected:
 
 public:
 	SqliteDataLoader(std::vector<std::string> columnNames, std::vector<float> weights, std::vector<int> isBinary, bool verbose = false) : 
+		IDataLoader{},
 		_columnNames{columnNames},
 		_weight{weights},
 		_isBinary{isBinary},
