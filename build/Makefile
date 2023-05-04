@@ -9,8 +9,10 @@ CCFLAGS = -Wall -fPIC
 LIB = -lpthread -ldl
 BIN = sqlite libsom test perfTest VSOM
 
-debug: CXXFLAGS += -g -O0
-debug: CCFLAGS += -g -O0
+debug: CXXFLAGS += -g -Og
+debug: CCFLAGS += -g -Og
+test: CXXFLAGS += -g -Og
+test: CCFLAGS += -g -Og
 debug: all
 release: CXXFLAGS += -O3 -msse2
 release: CCFLAGS += -O3
@@ -38,7 +40,7 @@ UMatrix.o : ../src/UMatrix.cpp
 sqlite3.o : ../extern/sqlite/sqlite3.c
 	$(cc) $(CCFLAGS) -o $@ -c $^
 
-test : ../tests/*.cpp libsom.a
+test : libsom.a
 	$(CXX) $(CXXFLAGS) $^ -o test $(LIB)
 
 perfTest : ../tests/performance/*.cpp libsom.a
