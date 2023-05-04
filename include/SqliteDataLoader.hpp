@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IDataLoader.hpp"
+#include "ColumnSpec.hpp"
 
 #include <string>
 #include <vector>
@@ -9,31 +10,6 @@
 
 class SqliteDataLoader : public IDataLoader
 {
-protected:
-	std::vector<std::string> _columnNames;
-	std::vector<float> _weight;
-	std::vector<int> _isBinary;
-	std::vector<int> _isContinuous;
-	sqlite3 *db;
-	bool _verbose;
-	bool hasOpenTransaction, hasOpenDatabase;
-	size_t totalNumberOfRows;
-	size_t vectorLength;
-	std::optional<int> currentLoadId;
-
-	void close();
-	int getMax(char *, std::string);
-	int getRecord(char *[], int, std::string) const;
-	int startTransaction();
-	int endTransaction();
-	int minId();
-	int maxId();
-	int doesExist(int);
-	int getElement(char *, int, std::string);
-	size_t numberOfRowsToLoad(int minId, int maxId);
-	void loadColumnSpecData(const std::string &path);
-	std::tuple<std::vector<RowData>, std::optional<int>, int> fetchData(std::optional<int> startId, std::optional<size_t> maxCount);
-
 public:
 	SqliteDataLoader(std::vector<std::string> columnNames, std::vector<float> weights, std::vector<int> isBinary, bool verbose = false) : 
 		IDataLoader{},
@@ -42,6 +18,7 @@ public:
 		_isBinary{isBinary},
 		// TODO: invert _isContinuous
 		_isContinuous{isBinary},
+		_tableName{},
 		_verbose{verbose}, 
 		hasOpenTransaction{false},
 		hasOpenDatabase{false},
@@ -54,6 +31,7 @@ public:
 		_columnNames{},
 		_weight{},
 		_isBinary{},
+		_tableName{},
 		_verbose{verbose}, 
 		hasOpenTransaction{false},
 		hasOpenDatabase{false},
@@ -63,10 +41,30 @@ public:
 	{
 		loadColumnSpecData(specFilePath);
 	};
+	SqliteDataLoader(const std::string &tableName, const std::string &dbPath, std::optional<size_t> maxLoadCount = std::nullopt) :
+		IDataLoader{maxLoadCount},
+		_columnNames{},
+		_weight{},
+		_isBinary{},
+		_tableName{tableName},
+		_dbPath{dbPath},
+		_verbose{false}, 
+		hasOpenTransaction{false},
+		hasOpenDatabase{false},
+		totalNumberOfRows{},
+		vectorLength{0},
+		currentLoadId{std::nullopt} {}
+		
 	~SqliteDataLoader() override;
+	void setColumnSpec(const std::vector<ColumnSpec> columnSpec) noexcept override;
 	size_t load() override;
 	std::vector<RowData> getPreview(size_t count) override;
 	bool open(const char *dbPath) override;
+	bool open();
+	std::vector<std::string> findAllColumns() override;
+
+	void addColumnName(std::string columnName) noexcept;
+
 	const std::vector<float> &getWeights() const noexcept override;
 	float &getWeight(size_t index) override;
 	const std::vector<int> &getBinary() const noexcept override;
@@ -78,4 +76,33 @@ public:
 	{ 
 		return !currentLoadId.has_value();
 	}
+
+protected:
+	std::vector<ColumnSpec> _columnSpec;
+	std::vector<std::string> _columnNames;
+	std::vector<float> _weight;
+	std::vector<int> _isBinary;
+	std::vector<int> _isContinuous;
+	std::string _tableName;
+	std::string _dbPath;
+	sqlite3 *db;
+	bool _verbose;
+	bool hasOpenTransaction, hasOpenDatabase;
+	size_t totalNumberOfRows;
+	size_t vectorLength;
+	std::optional<int> currentLoadId;
+
+	void close();
+	int getMax(char *, std::string);
+	int getRecord(char *[], int, std::string) const;
+	int startTransaction();
+	int endTransaction();
+	size_t minId();
+	size_t maxId();
+	bool doesExist(size_t);
+	int getElement(char *, size_t, std::string);
+	size_t numberOfRowsToLoad(size_t minId, size_t maxId);
+	void loadColumnSpecData(const std::string &path);
+	std::tuple<std::vector<RowData>, std::optional<int>, int> fetchData(std::optional<size_t> startId, std::optional<size_t> maxCount);
+
 };

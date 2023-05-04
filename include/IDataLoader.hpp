@@ -1,6 +1,9 @@
 #pragma once
 
+#include "ColumnSpec.hpp"
+
 #include <string>
+#include <vector>
 #include <optional>
 #include "Eigen/Dense"
 
@@ -25,8 +28,10 @@ class IDataLoader
 		virtual size_t load() = 0;
 		virtual std::vector<RowData> getPreview(size_t count) = 0;
 		virtual bool open(const char *path) = 0;
+		virtual std::vector<std::string> findAllColumns() = 0;
 		std::vector<RowData> data;
 
+		virtual void setColumnSpec(const std::vector<ColumnSpec> columnSpec) noexcept = 0;
 		virtual float &getWeight(size_t index) = 0;
 		virtual const std::vector<float> &getWeights() const noexcept = 0;
 		virtual const std::vector<int> &getBinary() const noexcept = 0;

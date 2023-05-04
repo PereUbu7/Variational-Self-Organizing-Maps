@@ -3,10 +3,14 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <sstream>
 #include <stdexcept>
 
+// Deprecated
 void SqliteDataLoader::loadColumnSpecData(const std::string &path)
 {
+	std::cerr << "Use of deprecated method SqliteDataLoader::loadColumnSpecData(const std::string &path)\n";
+	
 	auto inFile = std::ifstream();
 	inFile.open(path);
 
@@ -18,7 +22,7 @@ void SqliteDataLoader::loadColumnSpecData(const std::string &path)
 
 		std::string token;
 		std::string name{};
-		double parsedValue = 1.0;
+		float parsedValue = 1.0f;
 		bool isBinary = false;
 		while (std::getline(iline, token, '\t'))
 		{
@@ -29,7 +33,7 @@ void SqliteDataLoader::loadColumnSpecData(const std::string &path)
 			else if (currentColumn > 0)
 			{
 				char *ptr;
-				parsedValue = strtod(token.c_str(), &ptr);
+				parsedValue = strtof(token.c_str(), &ptr);
 
 				// If not a number, set weight to 1
 				if (*ptr)
@@ -48,6 +52,9 @@ void SqliteDataLoader::loadColumnSpecData(const std::string &path)
 		_weight.push_back(parsedValue);
 		_isContinuous.push_back(!isBinary);
 		_isBinary.push_back(isBinary);
+		
+		_columnSpec.emplace_back(_columnNames.back(), _weight.back(), _isBinary.back());
+
 		parsedValue = 1;
 		if (_verbose)
 			std::cout << _columnNames.back() << "\tWeight:" << _weight.back() << "\tBinary:" << _isBinary.back() << "\n";
@@ -55,6 +62,33 @@ void SqliteDataLoader::loadColumnSpecData(const std::string &path)
 	vectorLength = _columnNames.size();
 
 	inFile.close();
+}
+
+void SqliteDataLoader::setColumnSpec(const std::vector<ColumnSpec> columnSpec) noexcept
+{
+	_columnNames.clear();
+	_weight.clear();
+	_isBinary.clear();
+	_isContinuous.clear();
+	_columnSpec.clear();
+
+	auto numberOfElements = columnSpec.size();
+
+	_columnNames.reserve(numberOfElements);
+	_weight.reserve(numberOfElements);
+	_isBinary.reserve(numberOfElements);
+	_isContinuous.reserve(numberOfElements);
+	_columnSpec.reserve(numberOfElements);
+
+	for(auto spec : columnSpec)
+	{
+		_columnNames.emplace_back(spec.name);
+		_weight.emplace_back(spec.weight);
+		_isBinary.emplace_back(spec.isBinary);
+		_isContinuous.emplace_back(!spec.isBinary);
+
+		_columnSpec.emplace_back(_columnNames.back(), _weight.back(), _isBinary.back());
+	}
 }
 
 int saveElement(void *buff, int argc, char **argv, char **azColName)
@@ -77,6 +111,11 @@ int saveElement(void *buff, int argc, char **argv, char **azColName)
 SqliteDataLoader::~SqliteDataLoader()
 {
 	sqlite3_close(db);
+}
+
+bool SqliteDataLoader::open()
+{
+	return open(_dbPath.c_str());
 }
 
 bool SqliteDataLoader::open(const char *fileName)
@@ -183,12 +222,58 @@ int SqliteDataLoader::endTransaction()
 	return retValue;
 }
 
-int SqliteDataLoader::getElement(char *buff, int row, std::string icanName)
+int saveColumnName(void *buff, int argc, char **argv, char **azColName)
+{
+	auto instance = static_cast<SqliteDataLoader*>(buff);
+
+	if(argc == 1)
+	{
+		instance->addColumnName(argv[0]);
+	}
+
+	return 0;
+}
+
+void SqliteDataLoader::addColumnName(std::string columnName) noexcept
+{
+	_columnNames.push_back(columnName);
+}
+
+std::vector<std::string> SqliteDataLoader::findAllColumns()
+{
+	if(!hasOpenDatabase)
+	{
+		std::cerr << "No open database - cannot parse columns\n";
+		return std::vector<std::string>{};
+	}
+
+	std::stringstream ss;
+
+	ss << "select name from pragma_table_info('" << _tableName << "') as tblInfo;";
+
+	const std::string& tmp = ss.str();   
+  	const char* sql = tmp.c_str();
+
+	_columnNames.clear();
+
+	char *err_msg;
+	sqlite3_exec(db, sql, saveColumnName, static_cast<void*>(this), &err_msg);
+
+	if (err_msg)
+	{
+		sqlite3_free(err_msg);
+		throw std::runtime_error(std::string("Failed to execute statement: ") + sql + "\nError message:" + err_msg);
+	}
+
+	return _columnNames;
+}
+
+int SqliteDataLoader::getElement(char *buff, size_t row, std::string icanName)
 {
 	char sql[200];
 	char *err_msg;
 
-	sprintf(sql, "SELECT %s FROM Ican WHERE Id = '%d';", icanName.c_str(), row);
+	sprintf(sql, "SELECT %s FROM Ican WHERE Id = '%ld';", icanName.c_str(), row);
 
 	// Exekvera SQL statement
 	sqlite3_exec(db, sql, saveElement, buff, &err_msg);
@@ -203,11 +288,11 @@ int SqliteDataLoader::getElement(char *buff, int row, std::string icanName)
 	return (0);
 }
 
-size_t SqliteDataLoader::numberOfRowsToLoad(int minId, int maxId)
+size_t SqliteDataLoader::numberOfRowsToLoad(size_t minId, size_t maxId)
 {
 	char *err_msg;
 	char sql[200];
-	sprintf(sql, "SELECT COUNT(*) FROM Ican WHERE Id >= \'%d\' AND Id <= \'%d\';", minId, maxId);
+	sprintf(sql, "SELECT COUNT(*) FROM Ican WHERE Id >= \'%ld\' AND Id <= \'%ld\';", minId, maxId);
 
 	char buff[50];
 	unsigned long value;
@@ -227,12 +312,12 @@ size_t SqliteDataLoader::numberOfRowsToLoad(int minId, int maxId)
 	return ((int)value);
 }
 
-int SqliteDataLoader::minId()
+size_t SqliteDataLoader::minId()
 {
 	char *err_msg;
 	char sql[] = "SELECT MIN(Id) FROM Ican;";
 	char buff[50];
-	unsigned long value;
+	size_t value;
 
 	// Exekvera SQL statement
 	sqlite3_exec(db, sql, saveElement, buff, &err_msg);
@@ -246,15 +331,15 @@ int SqliteDataLoader::minId()
 
 	value = strtoul(buff, NULL, 10);
 
-	return ((int)value);
+	return value;
 }
 
-int SqliteDataLoader::maxId()
+size_t SqliteDataLoader::maxId()
 {
 	char *err_msg;
 	char sql[] = "SELECT MAX(Id) FROM Ican;";
 	char buff[50];
-	unsigned long value;
+	size_t value;
 
 	// Exekvera SQL statement
 	sqlite3_exec(db, sql, saveElement, buff, &err_msg);
@@ -268,17 +353,17 @@ int SqliteDataLoader::maxId()
 
 	value = strtoul(buff, NULL, 10);
 
-	return ((int)value);
+	return value;
 }
 
-int SqliteDataLoader::doesExist(int row)
+bool SqliteDataLoader::doesExist(size_t row)
 {
 	char *err_msg;
 	char sql[200];
 	char buff[50];
-	unsigned long value;
+	size_t value;
 
-	sprintf(sql, "SELECT COUNT(*) FROM Ican WHERE Id = \'%d\';", row);
+	sprintf(sql, "SELECT COUNT(*) FROM Ican WHERE Id = \'%ld\';", row);
 
 	// Exekvera SQL statement
 	sqlite3_exec(db, sql, saveElement, buff, &err_msg);
@@ -294,7 +379,7 @@ int SqliteDataLoader::doesExist(int row)
 
 	// if( !value ) printf("\nDoes not exist\n");
 
-	return ((int)value);
+	return value == 0;
 }
 
 int SqliteDataLoader::getMax(char *buff, std::string icanName)
@@ -332,16 +417,16 @@ size_t SqliteDataLoader::load()
 	return data.size();
 }
 
-std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetchData(std::optional<int> currentId, std::optional<size_t> maxCount)
+std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetchData(std::optional<size_t> currentId, std::optional<size_t> maxCount)
 {
 	const auto depth = getDepth();
 
 	startTransaction();
 
-	int maxIdValue = maxId();
+	auto maxIdValue = maxId();
 
 	currentId = currentId.has_value() ? currentId.value() : minId();
-	int maxLoadId = maxCount.has_value() ? 
+	auto maxLoadId = maxCount.has_value() ? 
 						(currentId.value() + static_cast<long>(maxCount.value())) > maxIdValue ? maxIdValue : currentId.value() + maxCount.value() - 1
 						: maxIdValue;
 	
@@ -393,4 +478,22 @@ std::vector<RowData> SqliteDataLoader::getPreview(size_t count)
 {
 	auto [loadedData, currentId, maxId] = fetchData(std::nullopt, 100);
 	return loadedData;
+}
+
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest/doctest.h"
+
+
+TEST_CASE("testing file stuff") {
+    auto sut = SqliteDataLoader("crop", "/opt/databases/cpm-dev.db");
+	sut.open();
+    
+    SUBCASE("seeking in file") {
+        auto columns = sut.findAllColumns();
+
+		for(auto col : columns)
+		{
+			std::cout << col << '\n';
+		}
+    }
 }
