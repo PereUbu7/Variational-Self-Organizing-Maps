@@ -2,7 +2,7 @@ RELEASEDIR_LIB?=/usr/lib
 RELEASEDIR_HEADER=/usr/include
 
 CXX = g++ 
-CXXFLAGS = -Wall -Wpedantic -Werror -fPIC -std=c++20 -I ../extern -I ../include -I /usr/include/
+CXXFLAGS = -Wall -Wpedantic -Werror -Wconversion -fPIC -std=c++23 -I ../extern -I ../include -I /usr/include/
 cc = gcc
 CCFLAGS = -Wall -fPIC
 

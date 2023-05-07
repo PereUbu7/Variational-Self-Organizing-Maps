@@ -57,7 +57,7 @@ protected:
 	std::vector<Eigen::VectorXf> SMap;
 	Metrics metrics;
 	Eigen::VectorXf weightMap;
-	std::vector<int> bmuHits;
+	std::vector<size_t> bmuHits;
 	std::vector<double> uMatrix;
 	std::atomic<bool> _isTraining;
 	size_t height, width, depth;
@@ -101,14 +101,14 @@ public:
 	float trainBatchSomEpoch(DataSet &data, double currentSigma, bool isFirst);
 	double evaluate(const DataSet &dataset) const;
 	TrainingReturnValue trainSingle(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights, const double eta, const double sigma, size_t &lastBMU, const WeigthDecayFunction weightDecayFunction);
-	int measureSimilarity(const DataSet *dataset, int numberOfSigmas, int minBmuHits) const;
-	int autoEncoder(const DataSet *dataset, int minBmuHits) const;
-	size_t variationalAutoEncoder(const DataSet *dataset, int minBmuHits) const;
+	int measureSimilarity(const DataSet *dataset, int numberOfSigmas, size_t minBmuHits) const;
+	int autoEncoder(const DataSet *dataset, size_t minBmuHits) const;
+	size_t variationalAutoEncoder(const DataSet *dataset, size_t minBmuHits) const;
 	SomIndex findBmu(const Eigen::VectorXf &v) const;
 	SomIndex findBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const;
 	SomIndex findLocalBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const size_t &lastBMUref, const Eigen::VectorXf &weights) const;
-	SomIndex findRestrictedBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const int minBmuHits, const Eigen::VectorXf &weights) const;
-	std::vector<double> findRestrictedBmd(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, int minBmuHits, const Eigen::VectorXf &weights) const;
+	SomIndex findRestrictedBmu(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, const size_t minBmuHits, const Eigen::VectorXf &weights) const;
+	std::vector<double> findRestrictedBmd(const Eigen::VectorXf &v, const Eigen::VectorXf &valid, size_t minBmuHits, const Eigen::VectorXf &weights) const;
 	double euclidianWeightedDist(
 		const SomIndex &pos,
 		const Eigen::VectorXf &v,
@@ -123,7 +123,7 @@ public:
 	void displayUMatrix() const;
 	UMatrix getUMatrix() const noexcept;
 	Eigen::VectorXf getWeigthMap() const noexcept;
-	std::vector<int> getBmuHits() const noexcept;
+	std::vector<size_t> getBmuHits() const noexcept;
 	size_t getHeight() const noexcept;
 	size_t getWidth() const noexcept;
 	size_t getDepth() const noexcept;
