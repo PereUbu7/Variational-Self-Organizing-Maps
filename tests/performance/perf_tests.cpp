@@ -53,7 +53,7 @@ namespace Perftests
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
-            sut.randomInitialize(std::time(NULL), 1);
+            sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
             auto numOfEpochs = int{100};
             auto eta0 = double{0.01};
@@ -73,7 +73,7 @@ namespace Perftests
         {
             setup();
 
-            sut.randomInitialize(std::time(NULL), 1);
+            sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
             auto positions = std::array<size_t, NumOfRuns>();
             for(auto& element : positions)
@@ -107,7 +107,7 @@ namespace Perftests
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
-            sut.randomInitialize(std::time(NULL), 1);
+            sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
             auto startTime = high_resolution_clock::now();
             for(size_t run = int{}; run < numberOfRuns; ++run)
@@ -136,7 +136,7 @@ namespace Perftests
         {
             setup();
 
-            sut.randomInitialize(std::time(NULL), 1);
+            sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
             auto modelVector = Eigen::VectorXf::Random(100);
             auto validityVector = Eigen::VectorXf::Ones(100);
             auto weightVector = Eigen::VectorXf::Ones(100);
@@ -155,7 +155,7 @@ namespace Perftests
         {
             setup();
 
-            sut.randomInitialize(std::time(NULL), 1);
+            sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
             auto positions = std::array<size_t, NumOfRuns>();
             for(auto& element : positions)
@@ -179,7 +179,7 @@ namespace Perftests
         {
             setup();
 
-            sut.randomInitialize(std::time(NULL), 1);
+            sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
             auto positions = std::array<size_t, NumOfRuns>();
             for(auto& element : positions)
@@ -203,7 +203,7 @@ namespace Perftests
         {
             setup();
 
-            sut.randomInitialize(std::time(NULL), 1);
+            sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
             auto positions = std::array<size_t, NumOfRuns>();
             for(auto& element : positions)
@@ -227,7 +227,7 @@ namespace Perftests
         {
             setup();
 
-            sut.randomInitialize(std::time(NULL), 1);
+            sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
             auto positions = std::array<size_t, NumOfRuns>();
             for(auto& element : positions)
@@ -262,7 +262,7 @@ namespace Perftests
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
-            sut.randomInitialize(std::time(NULL), 1);
+            sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
             auto startTime = high_resolution_clock::now();
             for(size_t run = int{}; run < numberOfRuns; ++run)
@@ -282,7 +282,7 @@ namespace Perftests
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
-            sut.randomInitialize(std::time(NULL), 1);
+            sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
             auto startTime = high_resolution_clock::now();
             for(size_t run = int{}; run < numberOfRuns; ++run)
@@ -303,7 +303,7 @@ namespace Perftests
 
             sut = Som{100, 100, trainingSet.vectorLength()};
 
-            sut.randomInitialize(std::time(NULL), 1);
+            sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
             auto startTime = high_resolution_clock::now();
             for(size_t run = int{}; run < numberOfRuns; ++run)
@@ -315,7 +315,11 @@ namespace Perftests
     };
 
 }
-int main()
+
+#define DOCTEST_CONFIG_IMPLEMENT
+#include "doctest/doctest.h"
+
+TEST_CASE("testing all performance")
 {
     using namespace Perftests;
     auto tester = SomTests{};

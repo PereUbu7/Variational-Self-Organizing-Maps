@@ -10,7 +10,7 @@
 void SqliteDataLoader::loadColumnSpecData(const std::string &path)
 {
 	std::cerr << "Use of deprecated method SqliteDataLoader::loadColumnSpecData(const std::string &path)\n";
-	
+
 	auto inFile = std::ifstream();
 	inFile.open(path);
 
@@ -52,7 +52,7 @@ void SqliteDataLoader::loadColumnSpecData(const std::string &path)
 		_weight.push_back(parsedValue);
 		_isContinuous.push_back(!isBinary);
 		_isBinary.push_back(isBinary);
-		
+
 		_columnSpec.emplace_back(_columnNames.back(), _weight.back(), _isBinary.back());
 
 		parsedValue = 1;
@@ -80,7 +80,7 @@ void SqliteDataLoader::setColumnSpec(const std::vector<ColumnSpec> columnSpec) n
 	_isContinuous.reserve(numberOfElements);
 	_columnSpec.reserve(numberOfElements);
 
-	for(auto spec : columnSpec)
+	for (auto spec : columnSpec)
 	{
 		_columnNames.emplace_back(spec.name);
 		_weight.emplace_back(spec.weight);
@@ -224,9 +224,9 @@ int SqliteDataLoader::endTransaction()
 
 int saveColumnName(void *buff, int argc, char **argv, char **azColName)
 {
-	auto instance = static_cast<SqliteDataLoader*>(buff);
+	auto instance = static_cast<SqliteDataLoader *>(buff);
 
-	if(argc == 1)
+	if (argc == 1)
 	{
 		instance->addColumnName(argv[0]);
 	}
@@ -241,7 +241,7 @@ void SqliteDataLoader::addColumnName(std::string columnName) noexcept
 
 std::vector<std::string> SqliteDataLoader::findAllColumns()
 {
-	if(!hasOpenDatabase)
+	if (!hasOpenDatabase)
 	{
 		std::cerr << "No open database - cannot parse columns\n";
 		return std::vector<std::string>{};
@@ -251,13 +251,13 @@ std::vector<std::string> SqliteDataLoader::findAllColumns()
 
 	ss << "select name from pragma_table_info('" << _tableName << "') as tblInfo;";
 
-	const std::string& tmp = ss.str();   
-  	const char* sql = tmp.c_str();
+	const std::string &tmp = ss.str();
+	const char *sql = tmp.c_str();
 
 	_columnNames.clear();
 
 	char *err_msg;
-	sqlite3_exec(db, sql, saveColumnName, static_cast<void*>(this), &err_msg);
+	sqlite3_exec(db, sql, saveColumnName, static_cast<void *>(this), &err_msg);
 
 	if (err_msg)
 	{
@@ -412,7 +412,8 @@ size_t SqliteDataLoader::load()
 	if (_verbose)
 		std::cout << "\rLoading database:100%\n";
 
-	if(currentLoadId > maxId) currentLoadId.reset();
+	if (currentLoadId > maxId)
+		currentLoadId.reset();
 
 	return data.size();
 }
@@ -426,16 +427,15 @@ std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetc
 	auto maxIdValue = maxId();
 
 	currentId = currentId.has_value() ? currentId.value() : minId();
-	auto maxLoadId = maxCount.has_value() ? 
-						(currentId.value() + static_cast<long>(maxCount.value())) > maxIdValue ? maxIdValue : currentId.value() + maxCount.value() - 1
-						: maxIdValue;
-	
+	auto maxLoadId = maxCount.has_value() ? (currentId.value() + static_cast<long>(maxCount.value())) > maxIdValue ? maxIdValue : currentId.value() + maxCount.value() - 1
+										  : maxIdValue;
+
 	totalNumberOfRows = numberOfRowsToLoad(currentId.value(), maxLoadId);
 
 	auto newData = std::vector<RowData>();
 	newData.reserve(totalNumberOfRows);
 
-	while(currentId <= maxLoadId)
+	while (currentId <= maxLoadId)
 	{
 		auto currentRowData = RowData{Eigen::VectorXf(depth), std::vector<int>(depth)};
 		// Loop over all columns of record
@@ -480,20 +480,98 @@ std::vector<RowData> SqliteDataLoader::getPreview(size_t count)
 	return loadedData;
 }
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest/doctest.h"
 
-
-TEST_CASE("testing file stuff") {
-    auto sut = SqliteDataLoader("crop", "/opt/databases/cpm-dev.db");
+TEST_CASE("testing file stuff")
+{
+	auto sut = SqliteDataLoader("ican", "../tests/performance/data/testDb.sq3");
 	sut.open();
-    
-    SUBCASE("seeking in file") {
-        auto columns = sut.findAllColumns();
 
-		for(auto col : columns)
+	SUBCASE("print all columns of table")
+	{
+		auto columns = sut.findAllColumns();
+
+		for (auto col : columns)
 		{
 			std::cout << col << '\n';
 		}
-    }
+	}
+	SUBCASE("compareLoadingSpecfileWithDynamicSpecs")
+	{
+		/* First remove, then write new columnSpecFile */
+		std::remove("../tests/tempColumnSpec.txt");
+		std::ofstream ofs;
+		ofs.open("../tests/tempColumnSpec.txt", std::ios::out);
+
+		ofs << 
+"A	1\n\
+B	1\n\
+C	1\n\
+D	1\n\
+E	1	binary\n\
+F	1\n\
+G	1\n\
+H	0.42\n\
+I	1";
+
+		ofs.close();
+
+		auto fileSut = SqliteDataLoader("../tests/tempColumnSpec.txt");
+		fileSut.open();
+		auto specFileColumnNames = fileSut.getNames();
+
+		std::string colA{"A"};
+		std::string colB{"B"};
+		std::string colC{"C"};
+		std::string colD{"D"};
+		std::string colE{"E"};
+		std::string colF{"F"};
+		std::string colG{"G"};
+		std::string colH{"H"};
+		std::string colI{"I"};
+		sut.setColumnSpec(std::vector<ColumnSpec>{
+			ColumnSpec(colA, 1, false),
+			ColumnSpec(colB, 1, false),
+			ColumnSpec(colC, 1, false),
+			ColumnSpec(colD, 1, false),
+			ColumnSpec(colE, 1, true),
+			ColumnSpec(colF, 1, false),
+			ColumnSpec(colG, 1, false),
+			ColumnSpec(colH, 0.42f, false),
+			ColumnSpec(colI, 1, false),
+		});
+
+		/* Check that column names are equal */
+		auto dynamicColumnNames = sut.getNames();
+
+		CHECK(specFileColumnNames.size() == dynamicColumnNames.size());
+
+		for (size_t index{0}; index < specFileColumnNames.size(); ++index)
+		{
+			REQUIRE(specFileColumnNames.at(index) == dynamicColumnNames.at(index));
+		}
+
+		/* Check that column binary is equal */
+		auto specFileColumnBinary = fileSut.getBinary();
+		auto dynamicColumnBinary = sut.getBinary();
+
+		CHECK(specFileColumnBinary.size() == dynamicColumnBinary.size());
+
+		for (size_t index{0}; index < specFileColumnBinary.size(); ++index)
+		{
+			REQUIRE(specFileColumnBinary.at(index) == dynamicColumnBinary.at(index));
+		}
+
+		/* Check that column weights are equal */
+		auto specFileColumnWeights = fileSut.getWeights();
+		auto dynamicColumnWeights = sut.getWeights();
+
+		CHECK(specFileColumnWeights.size() == dynamicColumnWeights.size());
+
+		for (size_t index{0}; index < specFileColumnWeights.size(); ++index)
+		{
+			REQUIRE(specFileColumnWeights.at(index) == dynamicColumnWeights.at(index));
+		}
+	}
 }

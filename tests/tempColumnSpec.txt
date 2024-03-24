@@ -5,5 +5,5 @@ D	1
 E	1	binary
 F	1
 G	1
-H	1
+H	0.42
 I	1

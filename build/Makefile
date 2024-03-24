@@ -16,7 +16,7 @@ test: CCFLAGS += -g -Og
 debug: all
 release: CXXFLAGS += -O3 -msse2
 release: CCFLAGS += -O3
-release: all
+
 
 all : $(BIN)
 
@@ -48,6 +48,9 @@ perfTest : ../tests/performance/*.cpp libsom.a
 
 VSOM : ../apps/main.cpp libsom.a
 	$(CXX) $(CXXFLAGS) $^ -o VSOM $(LIB)
+
+release : ../tests/main.cpp libsom.a
+	$(CXX) $(CXXFLAGS) $^ -o unitTests $(LIB)
 
 libsom : libsom.a libsom.so
 sqlite : sqlite3.o
