@@ -1,6 +1,7 @@
 #include "SOM.hpp"
 #include "SqliteDataLoader.hpp"
 #include "DataSet.hpp"
+#include "Transformation.hpp"
 
 #include "dateTimeUtils.hpp"
 
@@ -51,7 +52,81 @@ namespace Perftests
 
             auto trainingSet = DataSet(db);
 
-            sut = Som{100, 100, trainingSet.vectorLength()};
+            sut = Som{100, 100, trainingSet.vectorLength() * (trainingSet.vectorLength() - 1), true, Transformation<const Eigen::VectorXf>{
+                .Comparer = [](const Eigen::VectorXf &value, const Eigen::VectorXf &model, const Eigen::VectorXf &dispersion, const Eigen::VectorXf &valueWeight)
+                { 
+                    /* The model vector is split into two parts, A and B, where A*x' + B = y'
+                     * x' and y' together constitutes all combinations of the elements of 'value',
+                     * not considering direction of the combination with itself (so only the upper half matrix) */
+                Eigen::VectorXf A = model.head(model.size()/2);
+                Eigen::VectorXf B = model.tail(model.size()/2);
+
+                /* Create all combinations of value's element (n*(n-1)/2 combinations)*/
+                Eigen::VectorXf xPrime(A.size());
+                Eigen::VectorXf yPrime(A.size());
+
+                int index = 0;
+                for (int i = 0; i < value.size(); ++i) {
+                    for (int j = i + 1; j < value.size(); ++j) {
+                        xPrime[index] = value[i];
+                        yPrime[index] = value[j];
+                        index++;
+                    }
+                }
+
+                /* Calculate residual (or the inner gradient when deriving A*x' + B - y')*/
+                Eigen::VectorXf inner = A.array() * xPrime.array() + B.array() - yPrime.array();
+
+                /* Using squared error loss and doing partial derivates w.r.t. A and B 
+                 * (A*x' + B - Y')² => 
+                 * dE/dA = 2*(A*x' + B - y')*x' 
+                 * dE/dB = 2*(A*x' + B - y') */
+                Eigen::VectorXf aDelta = 2*inner.array()*xPrime.array();
+                Eigen::VectorXf bDelta = 2*inner;
+
+                /* Concatenate dE/dA and dE/dB back into original form of the model vector */
+                Eigen::VectorXf delta(model.size());
+                delta << aDelta , bDelta;
+
+                return delta; },
+            .Stepper = [](const Eigen::VectorXf &value, const Eigen::VectorXf &model, const Eigen::VectorXf &valueWeight)
+            { 
+                    /* The model vector is split into two parts, A and B, where A*x' + B = y'
+                     * x' and y' together constitutes all combinations of the elements of 'value',
+                     * not considering direction of the combination with itself (so only the upper half matrix) */
+                Eigen::VectorXf A = model.head(model.size()/2);
+                Eigen::VectorXf B = model.tail(model.size()/2);
+
+                /* Create all combinations of value's element (n*(n-1)/2 combinations)*/
+                Eigen::VectorXf xPrime(A.size());
+                Eigen::VectorXf yPrime(A.size());
+
+                int index = 0;
+                for (int i = 0; i < value.size(); ++i) {
+                    for (int j = i + 1; j < value.size(); ++j) {
+                        xPrime[index] = value[i];
+                        yPrime[index] = value[j];
+                        index++;
+                    }
+                }
+
+                /* Calculate residual (or the inner gradient when deriving A*x' + B - y')*/
+                Eigen::VectorXf inner = A.array() * xPrime.array() + B.array() - yPrime.array();
+
+                /* Using squared error loss and doing partial derivates w.r.t. A and B 
+                 * (A*x' + B - Y')² => 
+                 * dE/dA = 2*(A*x' + B - y')*x' 
+                 * dE/dB = 2*(A*x' + B - y') */
+                Eigen::VectorXf aDelta = 2*inner.array()*xPrime.array();
+                Eigen::VectorXf bDelta = 2*inner;
+
+                /* Concatenate dE/dA and dE/dB back into original form of the model vector */
+                Eigen::VectorXf delta(model.size());
+                delta << aDelta , bDelta;
+
+                return delta; },
+            .Name = "Linear regression"}
+            };
 
             sut.randomInitialize(std::time(NULL), 1);
 
@@ -320,20 +395,20 @@ int main()
     using namespace Perftests;
     auto tester = SomTests{};
     
-    printResultToFile(tester.test_randomInitialize(), "Som::randomInitialize()");
+    // printResultToFile(tester.test_randomInitialize(), "Som::randomInitialize()");
     printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", Som::WeigthDecayFunction::Exponential), "Som::train(exponentialWeightDecay)");
     printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", Som::WeigthDecayFunction::BatchMap), "Som::train(batchMap)");
     printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", Som::WeigthDecayFunction::InverseProportional), "Som::train(inverseProportionalWeightDecay)");
-    printResultToFile(tester.test_evaluate("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::evaluate()");
-    printResultToFile(tester.test_measureSimilarity("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::measureSimilarity()");
-    printResultToFile(tester.test_updateUMatrix("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::updateUMatrix()");
-    printResultToFile(tester.test_variationalAutoEncoder("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::variationalAutoEncoder()");
+    // printResultToFile(tester.test_evaluate("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::evaluate()");
+    // printResultToFile(tester.test_measureSimilarity("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::measureSimilarity()");
+    // printResultToFile(tester.test_updateUMatrix("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::updateUMatrix()");
+    // printResultToFile(tester.test_variationalAutoEncoder("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::variationalAutoEncoder()");
 
-    printResultToFile(tester.test_trainSingle<1000>(Som::WeigthDecayFunction::Exponential), "Som:trainSingle(exponentialWeightDecay) per thousand");
-    printResultToFile(tester.test_trainSingle<1000>(Som::WeigthDecayFunction::InverseProportional), "Som:trainSingle(inverseProportionalWeightDecay) per thousand");
-    printResultToFile(tester.test_euclidianWeightedDist<1000000>(), "Som:euclidianWeightedDist() per milion");
-    printResultToFile(tester.test_findBmu<1000>(), "Som::findBmu() per thousand");
-    printResultToFile(tester.test_findLocalBmu<1000000>(), "Som::findLocalBmu() per milion");
-    printResultToFile(tester.test_findRestrictedBmu<1000>(), "Som::findRestrictedBmu() per thousand");
-    printResultToFile(tester.test_findRestrictedBmd<1000>(), "Som::findRestrictedBmd() per thousand");
+    // printResultToFile(tester.test_trainSingle<1000>(Som::WeigthDecayFunction::Exponential), "Som:trainSingle(exponentialWeightDecay) per thousand");
+    // printResultToFile(tester.test_trainSingle<1000>(Som::WeigthDecayFunction::InverseProportional), "Som:trainSingle(inverseProportionalWeightDecay) per thousand");
+    // printResultToFile(tester.test_euclidianWeightedDist<1000000>(), "Som:euclidianWeightedDist() per milion");
+    // printResultToFile(tester.test_findBmu<1000>(), "Som::findBmu() per thousand");
+    // printResultToFile(tester.test_findLocalBmu<1000000>(), "Som::findLocalBmu() per milion");
+    // printResultToFile(tester.test_findRestrictedBmu<1000>(), "Som::findRestrictedBmu() per thousand");
+    // printResultToFile(tester.test_findRestrictedBmd<1000>(), "Som::findRestrictedBmd() per thousand");
 }

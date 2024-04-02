@@ -5,6 +5,7 @@
 #include "SomIndex.hpp"
 #include "DataSet.hpp"
 #include "UMatrix.hpp"
+#include "Transformation.hpp"
 
 #include <vector>
 #include <atomic>
@@ -52,6 +53,7 @@ protected:
 		Metrics() : MeanSquaredError{}, DistanceError{} {}
 		Metrics(size_t size) : MeanSquaredError(size), DistanceError(size) {}
 	};
+	Transformation<const Eigen::VectorXf> transform;
 	std::vector<Eigen::VectorXf> map;
 	std::vector<Eigen::VectorXf> sigmaMap;
 	std::vector<Eigen::VectorXf> SMap;
@@ -73,9 +75,10 @@ public:
 	};
 	std::mutex metricsMutex;
 
-	Som(size_t width, size_t height, size_t depth, bool verbose = false);
+	Som(size_t width, size_t height, size_t depth, bool verbose = false, Transformation<const Eigen::VectorXf> transformation = Transformation<const Eigen::VectorXf>{});
 	Som(const char *filename, bool verbose = false);
-	Som(const Som &som) : map{som.map},
+	Som(const Som &som) : transform{som.transform},
+						  map{som.map},
 						  sigmaMap{som.sigmaMap},
 						  SMap{som.SMap},
 						  metrics{},
@@ -152,6 +155,7 @@ public:
 
 	Som &operator=(const Som &other)
 	{
+		transform = other.transform;
 		map = other.map;
 		sigmaMap = other.sigmaMap;
 		SMap = other.SMap;

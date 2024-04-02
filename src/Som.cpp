@@ -7,9 +7,10 @@
 #include <ranges>
 
 // Initialize an empty SOM
-Som::Som(size_t inWidth = 1, size_t inHeight = 1, size_t inDepth = 1, bool verbose)
+Som::Som(size_t inWidth = 1, size_t inHeight = 1, size_t inDepth = 1, bool verbose, Transformation<const Eigen::VectorXf> transformation)
 {
 	_verbose = verbose;
+	transform = transformation;
 	// Create template vector for whole map
 	Eigen::VectorXf initV(inDepth);
 
@@ -118,8 +119,6 @@ double Som::euclidianWeightedDist(
 	const SomIndex &pos, const Eigen::VectorXf &v,
 	const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const
 {
-	// return std::sqrt( (this->getNeuron(pos) - v).dot(this->getNeuron(pos) - v) );
-
 	int intPos = pos.getY() * width + pos.getX();
 
 	return (euclidianWeightedDist(intPos, v, valid, weights));
@@ -137,8 +136,11 @@ double Som::euclidianWeightedDist(
 	// validEigen is an Eigen vector with weight if valid and 0 if not
 	validEigen = valid.array() * weights.array();
 
+	auto comparer = transform.Comparer(v, this->getNeuron(pos), sM, validEigen);
+
 	// (pos-v)*(pos-v)*weight*valid/sigma2
-	return (((this->getNeuron(pos) - v).array() / sM).matrix().dot(((this->getNeuron(pos) - v).array() * validEigen.array() / sM).matrix()));
+	// return (((comparer).array() / sM).matrix().dot(((comparer).array() * validEigen.array() / sM).matrix()));
+	return (comparer).matrix().dot(comparer.matrix());
 }
 
 UMatrix Som::getUMatrix() const noexcept
@@ -474,7 +476,9 @@ double Som::evaluate(const DataSet &data) const
 
 	auto continuous = data.getContinuous();
 
-	auto binaryEigen = data.getBinary().cast<float>();
+	auto binary = data.getBinary();
+
+	auto binaryEigen = binary.cast<float>();
 
 	for (size_t i = 0; i < data.size(); i++)
 	{
@@ -789,7 +793,7 @@ float Som::trainBatchSomEpoch(DataSet &dataset, double currentSigma, bool isFirs
 				*data.lastBMU = index;
 				bmuHits[index] += 1;
 
-				auto residual = this->getNeuron(index) - *data.data;
+				auto residual = this->transform.Comparer(*data.data, this->getNeuron(index), this->SMap[index], valid);
 				meanSquareError.fetch_add(residual.squaredNorm() / epochSize);
 			});
 	}
@@ -801,9 +805,10 @@ float Som::trainBatchSomEpoch(DataSet &dataset, double currentSigma, bool isFirs
 			wholeDataset.end(),
 			[this, &dataset, &meanSquareError, epochSize](auto data)
 			{
+				auto valid = Eigen::Map<const Eigen::VectorXi>((*data.valid).data(), (*data.valid).size()).cast<float>();
 				auto index = this->findLocalBmu(
 									 *data.data,
-									 Eigen::Map<const Eigen::VectorXi>((*data.valid).data(), (*data.valid).size()).cast<float>(),
+									 valid,
 									 *data.lastBMU,
 									 dataset.getWeights())
 								 .getSomIndex(*this);
@@ -811,7 +816,7 @@ float Som::trainBatchSomEpoch(DataSet &dataset, double currentSigma, bool isFirs
 				*data.lastBMU = index;
 				bmuHits[index] += 1;
 
-				auto residual = this->getNeuron(index) - *data.data;
+				auto residual = this->transform.Comparer(*data.data, this->getNeuron(index), this->SMap[index], valid);
 				meanSquareError.fetch_add(residual.squaredNorm() / epochSize);
 			});
 	}
@@ -861,17 +866,21 @@ float Som::trainBatchSomEpoch(DataSet &dataset, double currentSigma, bool isFirs
 
 				auto currentWeight = this->calculateNeighbourhoodWeight(
 					currentX, currentY, bmuX, bmuY, currentSigma);
+
+				auto valid = Eigen::Map<const Eigen::VectorXi>((*datapoint.valid).data(), (*datapoint.valid).size()).cast<float>();
 				
 				/* Eq. 47 */
 				sumOfWeights += currentWeight;
 
 				auto lastModel = currentModel;
 
+				Eigen::VectorXf currentDelta = this->transform.Stepper(*(datapoint.data), currentModel, valid);
+
 				/* Eq. 53 */
-				currentModel = currentModel + currentWeight / sumOfWeights * (*(datapoint.data) - currentModel);
+				currentModel = currentModel + currentWeight / sumOfWeights * currentDelta;
 
 				/* Eq. 68 */
-				currentModelSigma = currentModelSigma + currentWeight * (*(datapoint.data) - lastModel).array() * ((*(datapoint.data) - currentModel).array());
+				currentModelSigma = currentModelSigma + currentWeight * (this->transform.Stepper(*(datapoint.data), lastModel, valid)).array() * (currentDelta.array());
 			}
 
 			neuron = currentModel;
@@ -908,13 +917,15 @@ Som::TrainingReturnValue Som::trainSingle(const Eigen::VectorXf &v, const Eigen:
 
 	size_t endX = std::min((int)(bmu.getX() + 2.5 * sigma), (int)width);
 	size_t endY = std::min((int)(bmu.getY() + 2.5 * sigma), (int)height);
+	
+	Eigen::VectorXf totalWeight = valid.array() * weights.array();
 
 	for (size_t j = startY; j < endY; j++)
 	{
 		for (size_t i = startX; i < endX; i++)
 		{
 			// Calculate delta vector
-			auto delta = ((v - map[j * width + i]).array() * valid.array()).matrix();
+			const Eigen::VectorXf delta = transform.Stepper(v, map[j * width + i], totalWeight).matrix();
 
 			// Strength of neighbourhood. Calculated for each neuron
 			auto neighbourhoodWeight = calculateNeighbourhoodWeight(i, j, bmu.getX(), bmu.getY(), sigma);
@@ -937,18 +948,18 @@ Som::TrainingReturnValue Som::trainSingle(const Eigen::VectorXf &v, const Eigen:
 				// Protection against division by zero
 				auto tempWeight = weightMap[j * width + i] == 0 ? 1.0 : neighbourhoodWeight / weightMap[j * width + i];
 
-				map[j * width + i] += tempWeight * (v - map[j * width + i]); // Equation 53
+				map[j * width + i] += tempWeight * transform.Stepper(v, map[j * width + i], totalWeight); // Equation 53
 			}
 
 			// Protection against division by zero
 			auto tempWeight = weightMap[j * width + i] == 0 ? 0.000001 : weightMap[j * width + i];
 
-			SMap[j * width + i] += neighbourhoodWeight * (delta.array() * (v - map[j * width + i]).array()).matrix(); // Equation 68
+			SMap[j * width + i] += neighbourhoodWeight * (delta.array() * transform.Stepper(v, map[j * width + i], totalWeight).array()).matrix(); // Equation 68
 			sigmaMap[j * width + i] = (SMap[j * width + i].array() / tempWeight).abs().sqrt().matrix();				  // Equation 69
 		}
 	}
 	// Return best matching unit
-	return TrainingReturnValue{bmu, getNeuron(bmu) - v, static_cast<float>(euclidianWeightedDist(bmu, v, valid, weights))};
+	return TrainingReturnValue{bmu, transform.Comparer(v, getNeuron(bmu), getSigmaNeuron(bmu), totalWeight), static_cast<float>(euclidianWeightedDist(bmu, v, valid, weights))};
 }
 
 double Som::calculateNeighbourhoodWeight(
