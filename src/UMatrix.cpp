@@ -1,5 +1,6 @@
 #include "UMatrix.hpp"
 
+#include <algorithm>
 #include <cassert>
 
 double UMatrix::getValueAtIndex(size_t inWidth, size_t inHeight) const
