@@ -52,7 +52,14 @@ namespace Perftests
 
             auto trainingSet = DataSet(db);
 
-            sut = Som{100, 100, trainingSet.vectorLength() * (trainingSet.vectorLength() - 1), true, Transformation<const Eigen::VectorXf>::CombinatorialLinearRegression()};
+            sut = Som
+            {
+                100, 
+                100, 
+                trainingSet.vectorLength() * (trainingSet.vectorLength() - 1), 
+                true, 
+                Transformation<const Eigen::VectorXf>::CombinatorialLinearRegression(trainingSet.getNames())
+                };
 
             sut.randomInitialize(std::time(NULL), 1);
 
@@ -66,6 +73,9 @@ namespace Perftests
             auto startTime = high_resolution_clock::now();
             sut.train(trainingSet, numOfEpochs, eta0, etaDec, sigma0, sigmaDec, weightDecayFunction);
             auto endTime = high_resolution_clock::now();
+
+            std::cout << Transformation<const Eigen::VectorXf>::CombinatorialLinearRegression(trainingSet.getNames()).Displayer(sut.getNeuron(0))[0] << '\n';
+
             return (endTime - startTime) / numOfEpochs;
         }
 

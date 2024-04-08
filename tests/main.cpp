@@ -42,6 +42,8 @@ TEST_CASE("Fakes")
     Eigen::VectorXf X(4);
     X << 1, 2, 3, 4;
 
+    auto names = std::vector<std::string>{};
+
     auto transformation = Transformation<const Eigen::VectorXf>{
         .Comparer =
         [](const Eigen::VectorXf& X, const Eigen::VectorXf& P, const Eigen::VectorXf &dispersion, const Eigen::VectorXf &valid)
@@ -64,16 +66,16 @@ TEST_CASE("Fakes")
             return Y;
         },
         .Displayer =
-        [](const Eigen::VectorXf& v)
+        [&names](const Eigen::VectorXf& v)
         { 
-            auto A = v.head(v.size()/2);
+            // auto A = v.head(v.size()/2);
 
-            return A;
+            return names;
         }
         };
 
     std::cout << P.transpose() << "\n" << X.transpose() << "\n";
     std::cout << transformation.Comparer(X, P, P, X).transpose() << '\n';
     std::cout << transformation.Stepper(X, P, X).transpose() << '\n';
-    std::cout << transformation.Displayer(P).transpose() << '\n';
+    // std::cout << transformation.Displayer(names) << '\n';
 }
