@@ -7,10 +7,9 @@
 #include <ranges>
 
 // Initialize an empty SOM
-Som::Som(size_t inWidth = 1, size_t inHeight = 1, size_t inDepth = 1, bool verbose, Transformation<const Eigen::VectorXf> transformation)
+void Som::Construct(size_t inWidth, size_t inHeight, size_t inDepth, bool verbose)
 {
 	_verbose = verbose;
-	transform = transformation;
 	// Create template vector for whole map
 	Eigen::VectorXf initV(inDepth);
 
@@ -143,6 +142,22 @@ double Som::euclidianWeightedDist(
 	return (comparer).matrix().dot(comparer.matrix());
 }
 
+double Som::euclidianWeightedDistRaw(
+	const size_t &pos, const Eigen::VectorXf &v,
+	const Eigen::VectorXf &valid, const Eigen::VectorXf &weights) const
+{
+ 	Eigen::ArrayXf sM(sigmaMap[pos].size());
+	Eigen::VectorXf validEigen;
+
+	sM = (sigmaMap[pos].array() < 0.00001).select(0.00001, sigmaMap[pos]);
+
+	// validEigen is an Eigen vector with weight if valid and 0 if not
+	validEigen = valid.array() * weights.array();
+
+	// (pos-v)*(pos-v)*weight*valid/sigma2
+	return (((this->getNeuron(pos) - v).array() / sM).matrix().dot(((this->getNeuron(pos) - v).array() * validEigen.array() / sM).matrix()));
+}
+
 UMatrix Som::getUMatrix() const noexcept
 {
 	return UMatrix{uMatrix, width, height};
@@ -196,6 +211,16 @@ Eigen::VectorXf Som::getSigmaNeuron(SomIndex i) const noexcept
 Eigen::VectorXf Som::getSigmaNeuron(size_t i) const noexcept
 {
 	return sigmaMap[i];
+}
+
+std::vector<std::string> Som::getNeuronStrings(SomIndex index) const noexcept
+{
+	return transform.Displayer(map[index.getY() * width + index.getX()]);
+}
+
+std::vector<std::string> Som::getSigmaNeuronStrings(SomIndex index) const noexcept
+{
+	return transform.Displayer(sigmaMap[index.getY() * width + index.getX()]);
 }
 
 float Som::getMaxValueOfFeature(size_t modelVectorIndex) const
@@ -1012,10 +1037,11 @@ void Som::randomInitialize(int seed, float sigma)
 	}
 }
 
-void Som::updateUMatrix(const Eigen::VectorXf &weights)
+void Som::updateUMatrix(const Eigen::VectorXf &argWeights)
 {
 	std::vector<double> U(width * height);
-	auto val = Eigen::VectorXf::Constant(map[0].size(), 1);
+	auto val = Eigen::VectorXf::Constant(depth, 1);
+	auto weights = Eigen::VectorXf::Constant(depth, 1);
 	double diagonalFactor = 0.3;
 	double min = 10000000,
 		   max = 0;
@@ -1029,78 +1055,78 @@ void Som::updateUMatrix(const Eigen::VectorXf &weights)
 		{
 			if (j > 0 && i > 0 && j < (width - 1) && i < (height - 1)) // Middle part of map
 			{
-				U[i * width + j] = (this->euclidianWeightedDist(i * width + j, map[(i + 0) * width + j - 1], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i + 0) * width + j + 1], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j - 0], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j - 0], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j - 1], val, weights) * diagonalFactor +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j - 1], val, weights) * diagonalFactor +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j + 1], val, weights) * diagonalFactor +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j + 1], val, weights) * diagonalFactor) /
+				U[i * width + j] = (this->euclidianWeightedDistRaw(i * width + j, map[(i + 0) * width + j - 1], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 0) * width + j + 1], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j - 0], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j - 0], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j - 1], val, weights) * diagonalFactor +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j - 1], val, weights) * diagonalFactor +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j + 1], val, weights) * diagonalFactor +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j + 1], val, weights) * diagonalFactor) /
 								   8;
 			}
 			else if (i == 0 && j > 0 && j < (width - 1)) // Upper edge
 			{
-				U[i * width + j] = (this->euclidianWeightedDist(i * width + j, map[(i + 0) * width + j - 1], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i + 0) * width + j + 1], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j - 0], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j - 1], val, weights) * diagonalFactor +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j + 1], val, weights) * diagonalFactor) /
+				U[i * width + j] = (this->euclidianWeightedDistRaw(i * width + j, map[(i + 0) * width + j - 1], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 0) * width + j + 1], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j - 0], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j - 1], val, weights) * diagonalFactor +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j + 1], val, weights) * diagonalFactor) /
 								   5;
 			}
 			else if (i == (height - 1) && j > 0 && j < (width - 1)) // Lower edge
 			{
-				U[i * width + j] = (this->euclidianWeightedDist(i * width + j, map[(i + 0) * width + j - 1], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i + 0) * width + j + 1], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j - 0], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j - 1], val, weights) * diagonalFactor +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j + 1], val, weights) * diagonalFactor) /
+				U[i * width + j] = (this->euclidianWeightedDistRaw(i * width + j, map[(i + 0) * width + j - 1], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 0) * width + j + 1], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j - 0], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j - 1], val, weights) * diagonalFactor +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j + 1], val, weights) * diagonalFactor) /
 								   5;
 			}
 			else if (j == 0 && i > 0 && i < (height - 1)) // Left edge
 			{
-				U[i * width + j] = (this->euclidianWeightedDist(i * width + j, map[(i + 0) * width + j + 1], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j - 0], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j - 0], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j + 1], val, weights) * diagonalFactor +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j + 1], val, weights) * diagonalFactor) /
+				U[i * width + j] = (this->euclidianWeightedDistRaw(i * width + j, map[(i + 0) * width + j + 1], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j - 0], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j - 0], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j + 1], val, weights) * diagonalFactor +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j + 1], val, weights) * diagonalFactor) /
 								   5;
 			}
 			else if (j == (width - 1) && i > 0 && i < (height - 1)) // Right edge
 			{
-				U[i * width + j] = (this->euclidianWeightedDist(i * width + j, map[(i + 0) * width + j - 1], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j - 0], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j - 0], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j - 1], val, weights) * diagonalFactor +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j - 1], val, weights) * diagonalFactor) /
+				U[i * width + j] = (this->euclidianWeightedDistRaw(i * width + j, map[(i + 0) * width + j - 1], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j - 0], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j - 0], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j - 1], val, weights) * diagonalFactor +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j - 1], val, weights) * diagonalFactor) /
 								   5;
 			}
 			else if (j == 0 && i == 0) // Top left corner
 			{
-				U[i * width + j] = (this->euclidianWeightedDist(i * width + j, map[(i + 0) * width + j + 1], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j - 0], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j + 1], val, weights) * diagonalFactor) /
+				U[i * width + j] = (this->euclidianWeightedDistRaw(i * width + j, map[(i + 0) * width + j + 1], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j - 0], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j + 1], val, weights) * diagonalFactor) /
 								   3;
 			}
 			else if (j == (width - 1) && i == 0) // Top rigth corner
 			{
-				U[i * width + j] = (this->euclidianWeightedDist(i * width + j, map[(i + 0) * width + j - 1], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j - 0], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i + 1) * width + j - 1], val, weights) * diagonalFactor) /
+				U[i * width + j] = (this->euclidianWeightedDistRaw(i * width + j, map[(i + 0) * width + j - 1], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j - 0], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i + 1) * width + j - 1], val, weights) * diagonalFactor) /
 								   3;
 			}
 			else if (j == 0 && i == (height - 1)) // Bottom left corner
 			{
-				U[i * width + j] = (this->euclidianWeightedDist(i * width + j, map[(i + 0) * width + j + 1], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j - 0], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j + 1], val, weights) * diagonalFactor) /
+				U[i * width + j] = (this->euclidianWeightedDistRaw(i * width + j, map[(i + 0) * width + j + 1], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j - 0], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j + 1], val, weights) * diagonalFactor) /
 								   3;
 			}
 			else if (j == (width - 1) && i == (height - 1)) // Bottom right corner
 			{
-				U[i * width + j] = (this->euclidianWeightedDist(i * width + j, map[(i + 0) * width + j - 1], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j - 0], val, weights) +
-									this->euclidianWeightedDist(i * width + j, map[(i - 1) * width + j - 1], val, weights) * diagonalFactor) /
+				U[i * width + j] = (this->euclidianWeightedDistRaw(i * width + j, map[(i + 0) * width + j - 1], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j - 0], val, weights) +
+									this->euclidianWeightedDistRaw(i * width + j, map[(i - 1) * width + j - 1], val, weights) * diagonalFactor) /
 								   3;
 			}
 			else

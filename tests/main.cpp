@@ -44,7 +44,7 @@ TEST_CASE("Fakes")
 
     auto names = std::vector<std::string>{};
 
-    auto transformation = Transformation<const Eigen::VectorXf>{
+    auto transformation = Transformation{
         .Comparer =
         [](const Eigen::VectorXf& X, const Eigen::VectorXf& P, const Eigen::VectorXf &dispersion, const Eigen::VectorXf &valid)
         { 

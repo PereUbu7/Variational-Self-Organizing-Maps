@@ -53,7 +53,7 @@ protected:
 		Metrics() : MeanSquaredError{}, DistanceError{} {}
 		Metrics(size_t size) : MeanSquaredError(size), DistanceError(size) {}
 	};
-	Transformation<const Eigen::VectorXf> transform;
+	Transformation transform;
 	std::vector<Eigen::VectorXf> map;
 	std::vector<Eigen::VectorXf> sigmaMap;
 	std::vector<Eigen::VectorXf> SMap;
@@ -65,6 +65,8 @@ protected:
 	size_t height, width, depth;
 	bool _verbose;
 
+	void Construct(size_t inWidth, size_t inHeight, size_t inDepth, bool verbose);
+
 	// Lägg till att ta hänsyn till validitet i functionerna som nu tar del av den variabeln
 public:
 	enum class WeigthDecayFunction
@@ -75,7 +77,11 @@ public:
 	};
 	std::mutex metricsMutex;
 
-	Som(size_t width, size_t height, size_t depth, bool verbose = false, Transformation<const Eigen::VectorXf> transformation = Transformation<const Eigen::VectorXf>{});
+	Som(size_t width, size_t height, size_t depth, bool verbose = false, Transformation transformation = Transformation{}) :
+		transform{transformation} 
+	{
+		Construct(width, height, depth, verbose);
+	};
 	Som(const char *filename, bool verbose = false);
 	Som(const Som &som) : transform{som.transform},
 						  map{som.map},
@@ -122,6 +128,11 @@ public:
 		const Eigen::VectorXf &v,
 		const Eigen::VectorXf &valid,
 		const Eigen::VectorXf &weights) const;
+	double euclidianWeightedDistRaw(
+		const size_t &pos, 
+		const Eigen::VectorXf &v,
+		const Eigen::VectorXf &valid, 
+		const Eigen::VectorXf &weights) const;
 	void display() const;
 	void displayUMatrix() const;
 	UMatrix getUMatrix() const noexcept;
@@ -135,6 +146,8 @@ public:
 	Eigen::VectorXf getNeuron(size_t index) const noexcept;
 	Eigen::VectorXf getSigmaNeuron(SomIndex index) const noexcept;
 	Eigen::VectorXf getSigmaNeuron(size_t index) const noexcept;
+	std::vector<std::string> getNeuronStrings(SomIndex index) const noexcept; // TODO: Implement
+	std::vector<std::string> getSigmaNeuronStrings(SomIndex index) const noexcept;
 	float getMaxValueOfFeature(size_t modelVectorIndex) const;
 	float getMinValueOfFeature(size_t modelVectorIndex) const;
 	float getMaxSigmaOfFeature(size_t modelVectorIndex) const;

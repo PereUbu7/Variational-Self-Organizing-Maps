@@ -19,7 +19,7 @@ public:
 	void setX(size_t index) noexcept;
 	void setY(size_t index) noexcept;
 
-	bool operator==(const SomIndex &other)
+	bool operator==(const SomIndex &other) const
 	{
 		return x == other.x &&
 			y == other.y;

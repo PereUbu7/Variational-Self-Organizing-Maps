@@ -12,6 +12,8 @@
 #include <iomanip>
 #include <fstream>
 
+#include <cfenv>
+
 int verbose = 1;
 
 namespace Perftests
@@ -46,6 +48,7 @@ namespace Perftests
 
         auto test_train(const char *dbPath, const char *columnSpecPath, Som::WeigthDecayFunction weightDecayFunction)
         {
+            setup();
             auto db = SqliteDataLoader(columnSpecPath);
             auto dbOpenResult = db.open(dbPath);
             assert(dbOpenResult != 0);
@@ -54,27 +57,31 @@ namespace Perftests
 
             sut = Som
             {
-                100, 
-                100, 
+                10, 
+                10, 
                 trainingSet.vectorLength() * (trainingSet.vectorLength() - 1), 
                 true, 
-                Transformation<const Eigen::VectorXf>::CombinatorialLinearRegression(trainingSet.getNames())
+                Transformation::CombinatorialLinearRegression(trainingSet.getNames())
                 };
 
             sut.randomInitialize(std::time(NULL), 1);
 
-            auto numOfEpochs = int{100};
-            auto eta0 = double{0.01};
+            auto numOfEpochs = int{300};
+            auto eta0 = double{0.001};
             auto etaDec = double{0.01};
-            auto sigma0 = double{20.0};
+            auto sigma0 = double{10.0};
             auto sigmaDec = double{0.01};
             
+            for(std::string d : sut.getNeuronStrings(SomIndex(0, 0)))
+            {
+                std::cout << d << '\n';
+            }
 
             auto startTime = high_resolution_clock::now();
             sut.train(trainingSet, numOfEpochs, eta0, etaDec, sigma0, sigmaDec, weightDecayFunction);
             auto endTime = high_resolution_clock::now();
 
-            std::cout << Transformation<const Eigen::VectorXf>::CombinatorialLinearRegression(trainingSet.getNames()).Displayer(sut.getNeuron(0))[0] << '\n';
+            
 
             return (endTime - startTime) / numOfEpochs;
         }
@@ -291,7 +298,8 @@ namespace Perftests
             auto trainingSet = DataSet(db);
             trainingSet.loadNextDataFromStream();
 
-            sut = Som{100, 100, trainingSet.vectorLength()};
+            sut = Som{100, 100, trainingSet.vectorLength()*(trainingSet.vectorLength()-1),
+                false, Transformation::CombinatorialLinearRegression(trainingSet.getNames())};
 
             sut.randomInitialize(std::time(NULL), 1);
 
@@ -328,23 +336,26 @@ namespace Perftests
 }
 int main()
 {
+    /* Uncomment for abort signal att Nan or Inf */
+    // feenableexcept(FE_INVALID | FE_OVERFLOW);
+
     using namespace Perftests;
     auto tester = SomTests{};
     
-    // printResultToFile(tester.test_randomInitialize(), "Som::randomInitialize()");
+    printResultToFile(tester.test_randomInitialize(), "Som::randomInitialize()");
     printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", Som::WeigthDecayFunction::Exponential), "Som::train(exponentialWeightDecay)");
     printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", Som::WeigthDecayFunction::BatchMap), "Som::train(batchMap)");
     printResultToFile(tester.test_train("./data/testDb.sq3", "./data/columnSpec.txt", Som::WeigthDecayFunction::InverseProportional), "Som::train(inverseProportionalWeightDecay)");
-    // printResultToFile(tester.test_evaluate("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::evaluate()");
-    // printResultToFile(tester.test_measureSimilarity("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::measureSimilarity()");
-    // printResultToFile(tester.test_updateUMatrix("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::updateUMatrix()");
-    // printResultToFile(tester.test_variationalAutoEncoder("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::variationalAutoEncoder()");
+    printResultToFile(tester.test_evaluate("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::evaluate()");
+    printResultToFile(tester.test_measureSimilarity("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::measureSimilarity()");
+    printResultToFile(tester.test_updateUMatrix("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::updateUMatrix()");
+    printResultToFile(tester.test_variationalAutoEncoder("./data/testDb.sq3", "./data/columnSpec.txt"), "Som::variationalAutoEncoder()");
 
-    // printResultToFile(tester.test_trainSingle<1000>(Som::WeigthDecayFunction::Exponential), "Som:trainSingle(exponentialWeightDecay) per thousand");
-    // printResultToFile(tester.test_trainSingle<1000>(Som::WeigthDecayFunction::InverseProportional), "Som:trainSingle(inverseProportionalWeightDecay) per thousand");
-    // printResultToFile(tester.test_euclidianWeightedDist<1000000>(), "Som:euclidianWeightedDist() per milion");
-    // printResultToFile(tester.test_findBmu<1000>(), "Som::findBmu() per thousand");
-    // printResultToFile(tester.test_findLocalBmu<1000000>(), "Som::findLocalBmu() per milion");
-    // printResultToFile(tester.test_findRestrictedBmu<1000>(), "Som::findRestrictedBmu() per thousand");
-    // printResultToFile(tester.test_findRestrictedBmd<1000>(), "Som::findRestrictedBmd() per thousand");
+    printResultToFile(tester.test_trainSingle<1000>(Som::WeigthDecayFunction::Exponential), "Som:trainSingle(exponentialWeightDecay) per thousand");
+    printResultToFile(tester.test_trainSingle<1000>(Som::WeigthDecayFunction::InverseProportional), "Som:trainSingle(inverseProportionalWeightDecay) per thousand");
+    printResultToFile(tester.test_euclidianWeightedDist<1000000>(), "Som:euclidianWeightedDist() per milion");
+    printResultToFile(tester.test_findBmu<1000>(), "Som::findBmu() per thousand");
+    printResultToFile(tester.test_findLocalBmu<1000000>(), "Som::findLocalBmu() per milion");
+    printResultToFile(tester.test_findRestrictedBmu<1000>(), "Som::findRestrictedBmu() per thousand");
+    printResultToFile(tester.test_findRestrictedBmd<1000>(), "Som::findRestrictedBmd() per thousand");
 }
