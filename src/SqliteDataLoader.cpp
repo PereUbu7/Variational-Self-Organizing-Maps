@@ -480,7 +480,6 @@ std::vector<RowData> SqliteDataLoader::getPreview(size_t count)
 	return loadedData;
 }
 
-#define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest/doctest.h"
 
 TEST_CASE("testing file stuff")

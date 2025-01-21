@@ -3,6 +3,7 @@ RELEASEDIR_HEADER=/usr/include
 
 CXX = g++ 
 CXXFLAGS = -Wall -Wpedantic -Werror -Wconversion -fPIC -std=c++23 -I ../extern -I ../include -I /usr/include/
+
 cc = gcc
 CCFLAGS = -Wall -fPIC
 
@@ -20,10 +21,10 @@ release: CCFLAGS += -O3
 
 all : $(BIN)
 
-libsom.a : UMatrix.o SqliteDataLoader.o MnistDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
-	ar -rcs libsom.a UMatrix.o SqliteDataLoader.o MnistDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
-libsom.so : UMatrix.o SqliteDataLoader.o MnistDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
-	$(CXX) -shared -o libsom.so UMatrix.o SqliteDataLoader.o MnistDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
+libsom.a : Transformation.o UMatrix.o SqliteDataLoader.o MnistDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
+	ar -rcs libsom.a Transformation.o UMatrix.o SqliteDataLoader.o MnistDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
+libsom.so : Transformation.o UMatrix.o SqliteDataLoader.o MnistDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
+	$(CXX) -shared -o libsom.so Transformation.o UMatrix.o SqliteDataLoader.o MnistDataLoader.o DataSet.o Som.o SomIndex.o sqlite3.o
 SqliteDataLoader.o : ../src/SqliteDataLoader.cpp
 	$(CXX) $(CXXFLAGS) -c $^
 MnistDataLoader.o : ../src/MnistDataLoader.cpp
@@ -36,14 +37,16 @@ SomIndex.o : ../src/SomIndex.cpp
 	$(CXX) $(CXXFLAGS) -c $^
 UMatrix.o : ../src/UMatrix.cpp
 	$(CXX) $(CXXFLAGS) -c $^
+Transformation.o : ../src/Transformation.cpp
+	$(CXX) $(CXXFLAGS) -c $^
 
 sqlite3.o : ../extern/sqlite/sqlite3.c
 	$(cc) $(CCFLAGS) -o $@ -c $^
 
-test : libsom.a
+test : libsom.a ../tests/main.cpp
 	$(CXX) $(CXXFLAGS) $^ -o test $(LIB)
 
-perfTest : ../tests/performance/*.cpp libsom.a
+perfTest : ../tests/performance/*.cpp ../tests/main.cpp libsom.a
 	$(CXX) $(CXXFLAGS) $^ -o perfTest $(LIB)
 
 VSOM : ../apps/main.cpp libsom.a

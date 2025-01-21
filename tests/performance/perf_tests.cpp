@@ -1,6 +1,7 @@
 #include "SOM.hpp"
 #include "SqliteDataLoader.hpp"
 #include "DataSet.hpp"
+#include "Transformation.hpp"
 
 #include "dateTimeUtils.hpp"
 
@@ -10,6 +11,8 @@
 #include <sstream>
 #include <iomanip>
 #include <fstream>
+
+#include <cfenv>
 
 int verbose = 1;
 
@@ -45,26 +48,41 @@ namespace Perftests
 
         auto test_train(const char *dbPath, const char *columnSpecPath, Som::WeigthDecayFunction weightDecayFunction)
         {
+            setup();
             auto db = SqliteDataLoader(columnSpecPath);
             auto dbOpenResult = db.open(dbPath);
             assert(dbOpenResult != 0);
 
             auto trainingSet = DataSet(db);
 
-            sut = Som{100, 100, trainingSet.vectorLength()};
+            sut = Som
+            {
+                10, 
+                10, 
+                trainingSet.vectorLength() * (trainingSet.vectorLength() - 1), 
+                true, 
+                Transformation::CombinatorialLinearRegression(trainingSet.getNames())
+                };
 
             sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
-            auto numOfEpochs = int{100};
-            auto eta0 = double{0.01};
+            auto numOfEpochs = int{300};
+            auto eta0 = double{0.001};
             auto etaDec = double{0.01};
-            auto sigma0 = double{20.0};
+            auto sigma0 = double{10.0};
             auto sigmaDec = double{0.01};
             
+            for(std::string d : sut.getNeuronStrings(SomIndex(0, 0)))
+            {
+                std::cout << d << '\n';
+            }
 
             auto startTime = high_resolution_clock::now();
             sut.train(trainingSet, numOfEpochs, eta0, etaDec, sigma0, sigmaDec, weightDecayFunction);
             auto endTime = high_resolution_clock::now();
+
+            
+
             return (endTime - startTime) / numOfEpochs;
         }
 
@@ -280,7 +298,8 @@ namespace Perftests
             auto trainingSet = DataSet(db);
             trainingSet.loadNextDataFromStream();
 
-            sut = Som{100, 100, trainingSet.vectorLength()};
+            sut = Som{100, 100, trainingSet.vectorLength()*(trainingSet.vectorLength()-1),
+                false, Transformation::CombinatorialLinearRegression(trainingSet.getNames())};
 
             sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
@@ -316,11 +335,13 @@ namespace Perftests
 
 }
 
-#define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest/doctest.h"
 
 TEST_CASE("testing all performance")
 {
+    /* Uncomment for abort signal att Nan or Inf */
+    // feenableexcept(FE_INVALID | FE_OVERFLOW);
+
     using namespace Perftests;
     auto tester = SomTests{};
     
