@@ -43,10 +43,10 @@ Transformation.o : ../src/Transformation.cpp
 sqlite3.o : ../extern/sqlite/sqlite3.c
 	$(cc) $(CCFLAGS) -o $@ -c $^
 
-test : libsom.a ../tests/main.cpp
+test : ../tests/*.cpp libsom.a
 	$(CXX) $(CXXFLAGS) $^ -o test $(LIB)
 
-perfTest : ../tests/performance/*.cpp ../tests/main.cpp libsom.a
+perfTest : ../tests/performance/*.cpp ../tests/*.cpp libsom.a
 	$(CXX) $(CXXFLAGS) $^ -o perfTest $(LIB)
 
 VSOM : ../apps/main.cpp libsom.a
@@ -69,7 +69,7 @@ install :
 	cp ../extern/mnistReader/*.hpp $(RELEASEDIR_HEADER)/libsom/mnistReader/
 
 clean :
-	rm -f $(BIN) *.o *.a $(BIN)
+	rm -f $(BIN) *.o *.a libsom.so $(BIN)
 	rm $(RELEASEDIR_LIB)/libsom.so
 	rm $(RELEASEDIR_LIB)/libsom.a
 	rm -r $(RELEASEDIR_HEADER)/libsom/

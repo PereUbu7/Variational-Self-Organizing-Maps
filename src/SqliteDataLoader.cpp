@@ -499,9 +499,9 @@ TEST_CASE("testing file stuff")
 	SUBCASE("compareLoadingSpecfileWithDynamicSpecs")
 	{
 		/* First remove, then write new columnSpecFile */
-		std::remove("../tests/tempColumnSpec.txt");
+		std::remove("tempColumnSpec.txt");
 		std::ofstream ofs;
-		ofs.open("../tests/tempColumnSpec.txt", std::ios::out);
+		ofs.open("tempColumnSpec.txt", std::ios::out);
 
 		ofs << 
 "A	1\n\
@@ -516,7 +516,7 @@ I	1";
 
 		ofs.close();
 
-		auto fileSut = SqliteDataLoader("../tests/tempColumnSpec.txt");
+		auto fileSut = SqliteDataLoader("tempColumnSpec.txt");
 		fileSut.open();
 		auto specFileColumnNames = fileSut.getNames();
 
