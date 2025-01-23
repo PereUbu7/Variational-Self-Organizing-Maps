@@ -14,7 +14,6 @@
 
 #define VERSION 1.00
 
-#define ARG_VERBOSE 1
 #define ARG_SETTING 2
 
 #define ARG_DB_FILE 3
@@ -63,9 +62,8 @@ protected:
 	std::vector<double> uMatrix;
 	std::atomic<bool> _isTraining;
 	size_t height, width, depth;
-	bool _verbose;
 
-	void Construct(size_t inWidth, size_t inHeight, size_t inDepth, bool verbose);
+	void Construct(size_t inWidth, size_t inHeight, size_t inDepth, std::vector<std::string> names);
 
 	// Lägg till att ta hänsyn till validitet i functionerna som nu tar del av den variabeln
 public:
@@ -77,12 +75,18 @@ public:
 	};
 	std::mutex metricsMutex;
 
-	Som(size_t width, size_t height, size_t depth, bool verbose = false, Transformation transformation = Transformation{}) :
+	Som(size_t width, size_t height, DataSet dataset, Transformation transformation = Transformation{}) :
 		transform{transformation} 
 	{
-		Construct(width, height, depth, verbose);
+		Construct(width, height, dataset.vectorLength(), dataset.getNames());
 	};
-	Som(const char *filename, bool verbose = false);
+	Som(size_t width, size_t height, size_t depth, Transformation transformation = Transformation{}) :
+		transform{transformation} 
+	{
+		Construct(width, height, depth, std::vector<std::string>{});
+	};
+	
+	Som(const char *filename);
 	Som(const Som &som) : transform{som.transform},
 						  map{som.map},
 						  sigmaMap{som.sigmaMap},
@@ -95,7 +99,6 @@ public:
 						  height{som.height},
 						  width{som.width},
 						  depth{som.depth},
-						  _verbose{som._verbose},
 						  metricsMutex{}
 	{
 		_isTraining.store(som._isTraining.load(std::memory_order_seq_cst), std::memory_order_seq_cst);
@@ -179,7 +182,6 @@ public:
 		height = other.height;
 		width = other.width;
 		depth = other.depth;
-		_verbose = other._verbose;
 
 		return *this;
 	}

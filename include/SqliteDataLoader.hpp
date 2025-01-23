@@ -11,23 +11,9 @@
 class SqliteDataLoader : public IDataLoader
 {
 public:
-	SqliteDataLoader(std::vector<std::string> columnNames, std::vector<float> weights, std::vector<int> isBinary, bool verbose = false) : 
-		IDataLoader{},
-		_columnNames{columnNames},
-		_weight{weights},
-		_isBinary{isBinary},
-		// TODO: invert _isContinuous
-		_isContinuous{isBinary},
-		_tableName{},
-		_verbose{verbose}, 
-		hasOpenTransaction{false},
-		hasOpenDatabase{false},
-		totalNumberOfRows{},
-		vectorLength{columnNames.size()},
-		currentLoadId{std::nullopt}
-	{};
 	SqliteDataLoader(const std::string &specFilePath, std::optional<size_t> maxLoadCount = std::nullopt, bool verbose = false) :
 		IDataLoader{maxLoadCount},
+		_tableNames{},
 		_columnNames{},
 		_weight{},
 		_isBinary{},
@@ -41,12 +27,13 @@ public:
 	{
 		loadColumnSpecData(specFilePath);
 	};
-	SqliteDataLoader(const std::string &tableName, const std::string &dbPath, std::optional<size_t> maxLoadCount = std::nullopt) :
+	SqliteDataLoader(bool db, const std::string &dbPath, std::optional<size_t> maxLoadCount = std::nullopt) :
 		IDataLoader{maxLoadCount},
+		_tableNames{},
 		_columnNames{},
 		_weight{},
 		_isBinary{},
-		_tableName{tableName},
+		_tableName{},
 		_dbPath{dbPath},
 		_verbose{false}, 
 		hasOpenTransaction{false},
@@ -56,14 +43,17 @@ public:
 		currentLoadId{std::nullopt} {}
 		
 	~SqliteDataLoader() override;
+	void setTable(const std::string& name) noexcept;
 	void setColumnSpec(const std::vector<ColumnSpec> columnSpec) noexcept override;
 	size_t load() override;
 	std::vector<RowData> getPreview(size_t count) override;
 	bool open(const char *dbPath) override;
 	bool open();
 	std::vector<std::string> findAllColumns() override;
+	std::vector<std::string> findAllTables();
 
 	void addColumnName(std::string columnName) noexcept;
+	void addTableName(std::string tableName) noexcept;
 
 	const std::vector<float> &getWeights() const noexcept override;
 	float &getWeight(size_t index) override;
@@ -79,6 +69,7 @@ public:
 
 protected:
 	std::vector<ColumnSpec> _columnSpec;
+	std::vector<std::string> _tableNames;
 	std::vector<std::string> _columnNames;
 	std::vector<float> _weight;
 	std::vector<int> _isBinary;
@@ -101,6 +92,7 @@ protected:
 	size_t maxId();
 	bool doesExist(size_t);
 	int getElement(char *, size_t, std::string);
+	void executeStringStatement(std::stringstream& statementStream, int(func)(void*, int, char**, char**));
 	size_t numberOfRowsToLoad(size_t minId, size_t maxId);
 	void loadColumnSpecData(const std::string &path);
 	std::tuple<std::vector<RowData>, std::optional<int>, int> fetchData(std::optional<size_t> startId, std::optional<size_t> maxCount);

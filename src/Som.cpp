@@ -8,9 +8,8 @@
 #include <array>
 
 // Initialize an empty SOM
-void Som::Construct(size_t inWidth, size_t inHeight, size_t inDepth, bool verbose)
+void Som::Construct(size_t inWidth, size_t inHeight, size_t inDepth, std::vector<std::string> names)
 {
-	_verbose = verbose;
 	// Create template vector for whole map
 	Eigen::VectorXf initV(inDepth);
 
@@ -36,7 +35,7 @@ void Som::Construct(size_t inWidth, size_t inHeight, size_t inDepth, bool verbos
 			SMap[i](n) = 0.0f;
 		}
 		weightMap[i] = 0.0f;
-		bmuHits[i] = 0uz;
+		bmuHits[i] = 0u;
 		uMatrix[i] = 0.0;
 	}
 
@@ -44,18 +43,16 @@ void Som::Construct(size_t inWidth, size_t inHeight, size_t inDepth, bool verbos
 	width = inWidth;
 	height = inHeight;
 	depth = inDepth;
+
+	transform.names = names;
 }
 
 // Initialize SOM from trained data
-Som::Som(const char *SOMFileName, bool verbose)
+Som::Som(const char *SOMFileName)
 {
-	_verbose = verbose;
 	// Create template vector for whole map
 	Eigen::VectorXf initV(0);
 	initV = getSizeFromFile(SOMFileName);
-
-	if (_verbose)
-		std::cout << "width: " << width << "\theight: " << height << "\tlength: " << initV.size() << "\n";
 
 	depth = initV.size();
 
@@ -515,13 +512,7 @@ double Som::evaluate(const DataSet &data) const
 		 * Equation 4
 		 * Mean of binaryError + continious error */
 		error += 1. / (static_cast<double>(i) + 1.0) * (this->euclidianWeightedDist(bmu, data.getData(i), val.cast<float>(), data.getWeights()) + std::sqrt(binaryError.dot(binaryError)) - error);
-
-		if ((((data.size()) > 100 && (i % (int)((data.size()) / 100)) == 0) || (data.size()) < 100) && _verbose)
-			std::cout << "\rEvaluating dataset:" << 100 * i / (data.size()) << "%";
 	}
-
-	if (_verbose)
-		std::cout << "\rEvaluating dataset:100%\n";
 
 	return error;
 }
@@ -599,20 +590,10 @@ int Som::autoEncoder(const DataSet *data, size_t minBmuHits) const
 		// Find best matching unit (bmu)
 		// SomIndex bmu = findRestrictedBmu(v, val, minBmuHits, w);
 
-		if (_verbose)
-		{
-			std::cout << "X: " << bmu.getX() << "\tY: " << bmu.getY() << "\tID: " << i << "\n";
-		}
-
 		for (int n = 0; n < v.size(); n++)
 		{
-			// These ifs have to be sorted out. Why did I condition it on _verbose this way?!?!
-			if (!_verbose)
-			{
-				std::cout << v(n) << "\n";
-			}
+			std::cout << v(n) << "\n";
 
-			if (_verbose)
 			{ // This value should be sampled from a normal distribution with mean this->getNeuron(bmu)[n] and standard deviation this->getSigmaNeuron(bmu)[n] if continuous
 				// and from a probability of (1-n)*this->getNeuron(bmu)[n] + n*(1-this->getNeuron(bmu)[n]) if binary
 				//
@@ -691,20 +672,9 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, size_t minBmuHi
 		Eigen::ArrayXf max = ((/*contEigen.array()*/ ((this->getNeuron(bmu) + sM * numOfSigmas).array()))); // +
 		//(binaryEigen.array()*(binaryMap + 0.0001*ones)));
 
-		if (_verbose)
-		{
-			std::cout << "X: " << bmu.getX() << "\tY: " << bmu.getY() << "\tID: " << i << "\n";
-		}
-
 		// std::cout << "# BMU hits: " << bmuHits[pos] << "\tX: " << bmu.getX() << "\tY: " << bmu.getY() << "\n";
 		// if( ( ( (data->size()) > 100 && (i % (int)((data->size())/100)) == 0 ) || (data->size()) < 100 ) && _verbose )
 		//	std::cout << "\rMeasuring dataset:" << 100*i/(data->size()) << "%";
-
-		if (last && _verbose)
-		{
-			// std::cout << "\rMeasuring dataset:100%\n";
-			std::cout << "Measurement nr: " << i << " is chosen\n";
-		}
 
 		for (int n = 0; n < v.size(); n++)
 		{
@@ -719,13 +689,7 @@ int Som::measureSimilarity(const DataSet *data, int numOfSigmas, size_t minBmuHi
 			// binOnLoss(n) = std::isnan(binOnLoss(n)) ? 0 : binOnLoss(n);
 			// binOffLoss(n) = std::isnan(binOffLoss(n)) ? 0 : binOffLoss(n);
 
-			if (((v(n) < min(n) || v(n) > max(n)) && validEigen(n)) && _verbose)
-			{
-				std::cout << data->getName(n) << "\t( " << v(n) << " ) [" << min(n) << " - " << max(n) << "]\n";
-				success = false;
-			}
-
-			if (!_verbose && validEigen(n) && last)
+			if (validEigen(n) && last)
 			{
 				// TODO: Make this some kind of return instead
 				// std::cout << data->getName(n) << "\t" << delta(n)/*+binOnLoss(n)+binOffLoss(n)*/ << "\t" << v(n) << "\t" << min(n) << "\t" << max(n) << "\n";

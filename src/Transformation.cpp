@@ -1,5 +1,37 @@
 #include "Transformation.hpp"
 
+Transformation Transformation::Standard(const std::vector<std::string> &columnNames)
+{
+    return Transformation {
+        .Comparer =
+            [](const T &value, const T &model, const T &dispersion, const T &valueWeight)
+                { return model - value; },
+
+        .Stepper =
+            [](const T &value, const T &model, const T &valueWeight)
+                { return value - model; },
+
+        .names{columnNames},
+        .Displayer =
+            [columnNames](const T &model)
+                {
+                auto disp = std::vector<std::string>{};
+                disp.reserve(columnNames.size());
+
+                for (size_t index{0}; index < columnNames.size(); ++index)
+                {
+                    std::stringstream ss;
+                    ss << columnNames[index] << " = " << model[index];
+
+                    disp.emplace_back(ss.str());
+                }
+                return disp;
+            },
+
+        .Name = "Standard transformation"
+    };
+}
+
 Transformation Transformation::CombinatorialLinearRegression(const std::vector<std::string> &columnNames)
     {
         return Transformation{
@@ -70,10 +102,10 @@ Transformation Transformation::CombinatorialLinearRegression(const std::vector<s
                 auto disp = std::vector<std::string>{};
                 disp.reserve(columnNames.size());
 
-                const size_t tailIndex = static_cast<size_t>(model.size())/2u - 1u;
+                const long tailIndex = static_cast<long>(model.size())/2 - 1;
 
                 size_t index = 0;
-                for (size_t i{0}; i < columnNames.size(); ++i) {
+                for (size_t i{0}; i < columnNames.size() && static_cast<long>(index) < tailIndex; ++i) {
                     for (size_t j{i + 1}; j < columnNames.size(); ++j) {
                         std::stringstream ss;
                         ss << columnNames[i] << " = " << model[index] << '*' << columnNames[j] << " + " << model[tailIndex + index];

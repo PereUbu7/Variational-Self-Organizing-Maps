@@ -32,6 +32,31 @@ namespace Perftests
         myfile.close();
     }
 
+    std::vector<ColumnSpec> getTestDbColSpec()
+    {
+        std::string colA{"A"};
+		std::string colB{"B"};
+		std::string colC{"C"};
+		std::string colD{"D"};
+		std::string colE{"E"};
+		std::string colF{"F"};
+		std::string colG{"G"};
+		std::string colH{"H"};
+		std::string colI{"I"};
+		auto ret = std::vector<ColumnSpec>{
+			ColumnSpec(colA, 1, false),
+			ColumnSpec(colB, 1, false),
+			ColumnSpec(colC, 1, false),
+			ColumnSpec(colD, 1, false),
+			ColumnSpec(colE, 1, true),
+			ColumnSpec(colF, 1, false),
+			ColumnSpec(colG, 1, false),
+			ColumnSpec(colH, 1, false),
+			ColumnSpec(colI, 1, false),
+		};
+        return ret;
+    }
+
     class SomTests
     {
     private:
@@ -49,8 +74,11 @@ namespace Perftests
         auto test_train(const char *dbPath, const char *columnSpecPath, Som::WeigthDecayFunction weightDecayFunction)
         {
             setup();
-            auto db = SqliteDataLoader(columnSpecPath);
-            auto dbOpenResult = db.open(dbPath);
+            auto db = SqliteDataLoader(true, dbPath);
+            auto dbOpenResult = db.open();
+            auto colSpec = getTestDbColSpec();
+            db.setColumnSpec(colSpec);
+            db.setTable("ican");
             assert(dbOpenResult != 0);
 
             auto trainingSet = DataSet(db);
@@ -59,10 +87,9 @@ namespace Perftests
             {
                 10, 
                 10, 
-                trainingSet.vectorLength() * (trainingSet.vectorLength() - 1), 
-                true, 
-                Transformation::CombinatorialLinearRegression(trainingSet.getNames())
-                };
+                trainingSet,
+                Transformation::Standard(db.getNames())
+            };
 
             sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
@@ -80,8 +107,6 @@ namespace Perftests
             auto startTime = high_resolution_clock::now();
             sut.train(trainingSet, numOfEpochs, eta0, etaDec, sigma0, sigmaDec, weightDecayFunction);
             auto endTime = high_resolution_clock::now();
-
-            
 
             return (endTime - startTime) / numOfEpochs;
         }
@@ -116,14 +141,18 @@ namespace Perftests
 
         auto test_evaluate(const char *dbPath, const char *columnSpecPath)
         {
-            auto db = SqliteDataLoader(columnSpecPath);
-            auto dbOpenResult = db.open(dbPath);
+            auto db = SqliteDataLoader(true, dbPath);
+            auto dbOpenResult = db.open();
+            auto colSpec = getTestDbColSpec();
+            db.setColumnSpec(colSpec);
+            db.setTable("ican");
+
             assert(dbOpenResult != 0);
 
             auto trainingSet = DataSet(db);
             trainingSet.loadNextDataFromStream();
 
-            sut = Som{100, 100, trainingSet.vectorLength()};
+            sut = Som{100, 100, trainingSet.vectorLength(), Transformation::Standard(trainingSet.getNames())};
 
             sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
@@ -271,14 +300,18 @@ namespace Perftests
 
         auto test_measureSimilarity(const char *dbPath, const char *columnSpecPath)
         {
-            auto db = SqliteDataLoader(columnSpecPath);
-            auto dbOpenResult = db.open(dbPath);
+            auto db = SqliteDataLoader(true, dbPath);
+            auto dbOpenResult = db.open();
+            auto colSpec = getTestDbColSpec();
+            db.setColumnSpec(colSpec);
+            db.setTable("ican");
+
             assert(dbOpenResult != 0);
 
             auto trainingSet = DataSet(db);
             trainingSet.loadNextDataFromStream();
 
-            sut = Som{100, 100, trainingSet.vectorLength()};
+            sut = Som{100, 100, trainingSet.vectorLength(), Transformation::Standard(trainingSet.getNames())};
 
             sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
@@ -291,15 +324,19 @@ namespace Perftests
 
         auto test_updateUMatrix(const char *dbPath, const char *columnSpecPath)
         {
-            auto db = SqliteDataLoader(columnSpecPath);
-            auto dbOpenResult = db.open(dbPath);
+            auto db = SqliteDataLoader(true, dbPath);
+            auto dbOpenResult = db.open();
+            auto colSpec = getTestDbColSpec();
+            db.setColumnSpec(colSpec);
+            db.setTable("ican");
+
             assert(dbOpenResult != 0);
 
             auto trainingSet = DataSet(db);
             trainingSet.loadNextDataFromStream();
 
             sut = Som{100, 100, trainingSet.vectorLength()*(trainingSet.vectorLength()-1),
-                false, Transformation::CombinatorialLinearRegression(trainingSet.getNames())};
+                Transformation::CombinatorialLinearRegression(trainingSet.getNames())};
 
             sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 
@@ -313,14 +350,18 @@ namespace Perftests
 
         auto test_variationalAutoEncoder(const char *dbPath, const char *columnSpecPath)
         {
-            auto db = SqliteDataLoader(columnSpecPath);
-            auto dbOpenResult = db.open(dbPath);
+            auto db = SqliteDataLoader(true, dbPath);
+            auto dbOpenResult = db.open();
+            auto colSpec = getTestDbColSpec();
+            db.setColumnSpec(colSpec);
+            db.setTable("ican");
+
             assert(dbOpenResult != 0);
 
             auto trainingSet = DataSet(db);
             trainingSet.loadNextDataFromStream();
 
-            sut = Som{100, 100, trainingSet.vectorLength()};
+            sut = Som{100, 100, trainingSet.vectorLength(), Transformation::Standard(trainingSet.getNames())};
 
             sut.randomInitialize(static_cast<int>(std::time(NULL)), 1);
 

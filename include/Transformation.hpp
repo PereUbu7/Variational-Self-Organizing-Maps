@@ -22,12 +22,14 @@ struct Transformation
     };
 
     std::vector<std::string> names{};
-    std::function<std::vector<std::string>(const T &model)> Displayer {
+    std::function<std::vector<std::string>(const T &model)> Displayer{
         [&names = names](const T &model)
-    { return names; }
-    };
+        {
+            return names;
+        }};
 
     std::string Name{"Standard transformation"};
 
+    static Transformation Standard(const std::vector<std::string> &columnNames);
     static Transformation CombinatorialLinearRegression(const std::vector<std::string> &columnNames);
 };
