@@ -468,6 +468,12 @@ std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetc
 {
 	const auto depth = getDepth();
 
+	if(_tableName.empty())
+	{
+		std::cerr << "Cannot read database - No table name specified\n";
+		return std::make_tuple(std::vector<RowData>{}, std::nullopt, 0);
+	}
+
 	startTransaction();
 
 	auto maxIdValue = maxId();
