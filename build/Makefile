@@ -15,7 +15,7 @@ debug: CCFLAGS += -g -Og
 test: CXXFLAGS += -g -Og
 test: CCFLAGS += -g -Og
 debug: all
-release: CXXFLAGS += -O3 -msse2
+release: CXXFLAGS += -O3 -msse2 -DDOCTEST_CONFIG_DISABLE
 release: CCFLAGS += -O3
 
 
