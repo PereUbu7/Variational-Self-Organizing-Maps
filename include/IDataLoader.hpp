@@ -32,6 +32,7 @@ class IDataLoader
 		std::vector<RowData> data;
 
 		virtual void setColumnSpec(const std::vector<ColumnSpec> columnSpec) noexcept = 0;
+		virtual const std::vector<ColumnSpec> getColumnSpec() noexcept = 0;
 		virtual float &getWeight(size_t index) = 0;
 		virtual const std::vector<float> &getWeights() const noexcept = 0;
 		virtual const std::vector<int> &getBinary() const noexcept = 0;

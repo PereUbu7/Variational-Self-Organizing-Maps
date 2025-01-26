@@ -22,7 +22,7 @@ public:
 		hasOpenTransaction{false},
 		hasOpenDatabase{false},
 		totalNumberOfRows{},
-		vectorLength{0},
+		vectorLength{0u},
 		currentLoadId{std::nullopt}
 	{
 		loadColumnSpecData(specFilePath);
@@ -39,12 +39,13 @@ public:
 		hasOpenTransaction{false},
 		hasOpenDatabase{false},
 		totalNumberOfRows{},
-		vectorLength{0},
+		vectorLength{0u},
 		currentLoadId{std::nullopt} {}
 		
 	~SqliteDataLoader() override;
 	void setTable(const std::string& name) noexcept;
 	void setColumnSpec(const std::vector<ColumnSpec> columnSpec) noexcept override;
+	const std::vector<ColumnSpec> getColumnSpec() noexcept override;
 	size_t load() override;
 	std::vector<RowData> getPreview(size_t count) override;
 	bool open(const char *dbPath) override;

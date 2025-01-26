@@ -99,6 +99,11 @@ void SqliteDataLoader::setColumnSpec(const std::vector<ColumnSpec> columnSpec) n
 	vectorLength = _columnNames.size();
 }
 
+const std::vector<ColumnSpec> SqliteDataLoader::getColumnSpec() noexcept
+{
+	return _columnSpec;
+}
+
 int saveElement(void *buff, int argc, char **argv, char **azColName)
 {
 	char *ptr = (char *)buff;
@@ -271,6 +276,8 @@ std::vector<std::string> SqliteDataLoader::findAllColumns()
 		return std::vector<std::string>{};
 	}
 
+	_columnNames.clear();
+
 	std::stringstream ss;
 
 	ss << "select name from pragma_table_info('" << _tableName << "') as tblInfo;";
@@ -287,6 +294,8 @@ std::vector<std::string> SqliteDataLoader::findAllTables()
 		std::cerr << "No open database - cannot parse columns\n";
 		return std::vector<std::string>{};
 	}
+
+	_tableNames.clear();
 
 	std::stringstream ss;
 
