@@ -27,6 +27,11 @@ struct Transformation
         {
             return names;
         }};
+    std::function<size_t(size_t vectorLength)> Length{
+        [](size_t vectorLength)
+        {
+            return vectorLength;
+        }};
 
     std::string Name{"Standard transformation"};
 

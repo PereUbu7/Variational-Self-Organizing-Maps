@@ -28,6 +28,12 @@ Transformation Transformation::Standard(const std::vector<std::string> &columnNa
                 return disp;
             },
 
+        .Length =
+        [](size_t vectorLength)
+        {
+            return vectorLength;
+        },
+
         .Name = "Standard transformation"
     };
 }
@@ -102,7 +108,7 @@ Transformation Transformation::CombinatorialLinearRegression(const std::vector<s
                 auto disp = std::vector<std::string>{};
                 disp.reserve(columnNames.size());
 
-                const long tailIndex = static_cast<long>(model.size())/2 - 1;
+                const long tailIndex = static_cast<long>(model.size())/2;
 
                 size_t index = 0;
                 for (size_t i{0}; i < columnNames.size() && static_cast<long>(index) < tailIndex; ++i) {
@@ -115,5 +121,9 @@ Transformation Transformation::CombinatorialLinearRegression(const std::vector<s
                     }
                 }
                 return disp; },
+            .Length = [](size_t vectorLength)
+            {
+                return vectorLength*(vectorLength - 1u);
+            },
             .Name = "Linear regression"};
     }
