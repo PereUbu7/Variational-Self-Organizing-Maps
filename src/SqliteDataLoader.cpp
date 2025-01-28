@@ -464,7 +464,7 @@ int SqliteDataLoader::getMax(char *buff, std::string icanName)
 
 size_t SqliteDataLoader::load()
 {
-	auto [loadedData, currentId, maxId] = fetchData(currentLoadId, m_maxLoadCount);
+	auto [loadedData, currentId, maxId] = fetchData2(currentLoadId, m_maxLoadCount);
 
 	data = loadedData;
 	currentLoadId = currentId;
@@ -476,6 +476,68 @@ size_t SqliteDataLoader::load()
 		currentLoadId.reset();
 
 	return data.size();
+}
+
+std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetchData2(std::optional<size_t> currentId, std::optional<size_t> maxCount)
+{
+	if(_tableName.empty())
+	{
+		std::cerr << "Cannot read database - No table name specified\n";
+		return std::make_tuple(std::vector<RowData>{}, std::nullopt, 0);
+	}
+
+	auto depth = getDepth();
+
+	startTransaction();
+
+	auto maxIdValue = maxId();
+
+	currentId = currentId.has_value() ? currentId.value() : minId();
+	auto maxLoadId = maxCount.has_value() ? (currentId.value() + static_cast<long>(maxCount.value())) > maxIdValue ? maxIdValue : currentId.value() + maxCount.value() - 1
+										  : maxIdValue;
+
+	totalNumberOfRows = numberOfRowsToLoad(currentId.value(), maxLoadId);
+
+	auto newData = std::vector<RowData>();
+	newData.reserve(totalNumberOfRows);
+
+	std::stringstream ss;
+	ss << "SELECT ";
+	for(auto column : getNames())
+		ss << column << ',';
+	ss << "Id FROM " << _tableName << " WHERE Id>=" << currentId.value() << " AND Id <=" << maxLoadId << ';';
+	auto query = ss.str();
+
+	sqlite3_stmt *res;
+	const char *tail;
+
+	if(sqlite3_prepare_v2(db, query.c_str(), static_cast<int>(query.length()), &res, &tail) != SQLITE_OK)
+	{
+		std::cerr << "Cannot fetch data: " << sqlite3_errmsg(db) << '\n';
+		return std::make_tuple(std::vector<RowData>{}, std::nullopt, 0);
+	}
+
+	while(sqlite3_step(res) == SQLITE_ROW)
+	{
+		auto currentRowData = RowData{Eigen::VectorXf(depth), std::vector<int>(depth)};
+
+		for(int columnIndex{}; columnIndex < static_cast<int>(depth); ++columnIndex)
+		{
+			/* TODO: Check for value type somehow */
+			currentRowData.values[columnIndex] = static_cast<float>(sqlite3_column_double(res, columnIndex));
+			currentRowData.valid[columnIndex] = 1;
+		}
+
+		currentId = sqlite3_column_int64(res, static_cast<int>(depth));
+
+		newData.push_back(std::move(currentRowData));
+	}
+
+	endTransaction();
+
+	std::cout << "Fetched whole batch\n";
+
+	return std::make_tuple(newData, currentId.emplace(currentId.value() + 1), maxIdValue);
 }
 
 std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetchData(std::optional<size_t> currentId, std::optional<size_t> maxCount)
@@ -548,7 +610,7 @@ std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetc
 
 std::vector<RowData> SqliteDataLoader::getPreview(size_t count)
 {
-	auto [loadedData, currentId, maxId] = fetchData(std::nullopt, 100);
+	auto [loadedData, currentId, maxId] = fetchData2(std::nullopt, 100);
 	return loadedData;
 }
 

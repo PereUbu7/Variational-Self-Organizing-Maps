@@ -99,5 +99,6 @@ protected:
 	size_t numberOfRowsToLoad(size_t minId, size_t maxId);
 	void loadColumnSpecData(const std::string &path);
 	std::tuple<std::vector<RowData>, std::optional<int>, int> fetchData(std::optional<size_t> startId, std::optional<size_t> maxCount);
+	std::tuple<std::vector<RowData>, std::optional<int>, int> fetchData2(std::optional<size_t> startId, std::optional<size_t> maxCount);
 
 };
