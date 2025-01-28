@@ -83,12 +83,12 @@ size_t MnistDataLoader::load()
     return numberOfSamples;
 }
 
-float &MnistDataLoader::getWeight(size_t index)
+float MnistDataLoader::getWeight(size_t index)
 {
     return _weights.at(index);
 }
 
-const std::vector<float> &MnistDataLoader::getWeights() const noexcept
+const std::vector<float> MnistDataLoader::getWeights() const noexcept
 {
     return _weights;
 }
@@ -104,7 +104,7 @@ std::string MnistDataLoader::getName(size_t index) const noexcept
 {
     return _names.at(index);
 }
-const std::vector<std::string> &MnistDataLoader::getNames() const noexcept
+const std::vector<std::string> MnistDataLoader::getNames() const noexcept
 {
     return _names;
 }

@@ -5,6 +5,7 @@
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
+#include <algorithm>
 
 // Deprecated
 void SqliteDataLoader::loadColumnSpecData(const std::string &path)
@@ -175,24 +176,28 @@ const std::vector<int> &SqliteDataLoader::getContinuous() const noexcept
 	return _isContinuous;
 }
 
-const std::vector<float> &SqliteDataLoader::getWeights() const noexcept
+const std::vector<float> SqliteDataLoader::getWeights() const noexcept
 {
-	return _weight;
+	std::vector<float> res{};
+	std::transform(_columnSpec.begin(), _columnSpec.end(), std::back_inserter(res), [](auto spec) { return spec.weight; });
+	return res;
 }
 
-float &SqliteDataLoader::getWeight(size_t index)
+float SqliteDataLoader::getWeight(size_t index)
 {
-	return _weight.at(index);
+	return _columnSpec.at(index).weight;
 }
 
 std::string SqliteDataLoader::getName(size_t index) const noexcept
 {
-	return _columnNames.at(index);
+	return _columnSpec.at(index).name;
 }
 
-const std::vector<std::string> &SqliteDataLoader::getNames() const noexcept
+const std::vector<std::string> SqliteDataLoader::getNames() const noexcept
 {
-	return _columnNames;
+	std::vector<std::string> res{};
+	std::transform(_columnSpec.begin(), _columnSpec.end(), std::back_inserter(res), [](auto spec) { return spec.name; });
+	return res;
 }
 
 size_t SqliteDataLoader::getDepth() const noexcept
@@ -496,8 +501,12 @@ std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetc
 	auto newData = std::vector<RowData>();
 	newData.reserve(totalNumberOfRows);
 
+
 	while (currentId <= maxLoadId)
 	{
+		if(currentId.value() % 100 == 0)
+			std::cout << "\rFetching data with id = [" << currentId.value() << ", " << maxLoadId << "]";
+
 		auto currentRowData = RowData{Eigen::VectorXf(depth), std::vector<int>(depth)};
 		// Loop over all columns of record
 		for (size_t i = 0; i < depth; i++)
@@ -531,6 +540,8 @@ std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetc
 	}
 
 	endTransaction();
+
+	std::cout << "Fetched whole batch\n";
 
 	return std::make_tuple(newData, currentId, maxIdValue);
 }

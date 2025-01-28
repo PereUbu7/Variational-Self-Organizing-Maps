@@ -38,12 +38,12 @@ public:
     size_t load() override;
     std::vector<RowData> getPreview(size_t count) override;
     bool open(const char *path) override;
-    float &getWeight(size_t index) override;
-    const std::vector<float> &getWeights() const noexcept override;
+    float getWeight(size_t index) override;
+    const std::vector<float> getWeights() const noexcept override;
     const std::vector<int> &getBinary() const noexcept override;
     const std::vector<int> &getContinuous() const noexcept override;
     std::string getName(size_t index) const noexcept override;
-    const std::vector<std::string> &getNames() const noexcept override;
+    const std::vector<std::string> getNames() const noexcept override;
     size_t getDepth() const noexcept override;
     bool isAtStartOfDataStream() const noexcept override 
 	{ 

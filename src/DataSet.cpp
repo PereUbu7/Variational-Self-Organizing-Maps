@@ -68,7 +68,7 @@ size_t &DataSet::getLastBMU(size_t index)
 	return lastBMU[index];
 }
 
-const std::vector<std::string> &DataSet::getNames() const noexcept
+const std::vector<std::string> DataSet::getNames() const noexcept
 {
 	return _loader.getNames();
 }
@@ -83,7 +83,7 @@ const Eigen::VectorXf DataSet::getWeights() const
 	return Eigen::Map<const Eigen::VectorXf>(_loader.getWeights().data(), _loader.getWeights().size());
 }
 
-float &DataSet::getWeight(size_t index)
+float DataSet::getWeight(size_t index)
 {
 	return _loader.getWeight(index);
 }

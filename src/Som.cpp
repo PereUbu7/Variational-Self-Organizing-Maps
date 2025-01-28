@@ -275,6 +275,11 @@ bool Som::isTraining() const noexcept
 	return _isTraining;
 }
 
+bool Som::isCompatibleWithData(DataSet &data) const noexcept
+{
+	return transform.Length(data.vectorLength()) == depth;
+}
+
 SomIndex Som::findBmu(const Eigen::VectorXf &v) const
 {
 	auto valid = Eigen::VectorXf::Ones(v.size());

@@ -13,6 +13,7 @@ class SqliteDataLoader : public IDataLoader
 public:
 	SqliteDataLoader(const std::string &specFilePath, std::optional<size_t> maxLoadCount = std::nullopt, bool verbose = false) :
 		IDataLoader{maxLoadCount},
+		_columnSpec{},
 		_tableNames{},
 		_columnNames{},
 		_weight{},
@@ -29,6 +30,7 @@ public:
 	};
 	SqliteDataLoader(bool db, const std::string &dbPath, std::optional<size_t> maxLoadCount = std::nullopt) :
 		IDataLoader{maxLoadCount},
+		_columnSpec{},
 		_tableNames{},
 		_columnNames{},
 		_weight{},
@@ -56,12 +58,12 @@ public:
 	void addColumnName(std::string columnName) noexcept;
 	void addTableName(std::string tableName) noexcept;
 
-	const std::vector<float> &getWeights() const noexcept override;
-	float &getWeight(size_t index) override;
+	const std::vector<float> getWeights() const noexcept override;
+	float getWeight(size_t index) override;
 	const std::vector<int> &getBinary() const noexcept override;
 	const std::vector<int> &getContinuous() const noexcept override;
 	std::string getName(size_t index) const noexcept;
-	const std::vector<std::string> &getNames() const noexcept override;
+	const std::vector<std::string> getNames() const noexcept override;
 	size_t getDepth() const noexcept;
 	bool isAtStartOfDataStream() const noexcept override 
 	{ 

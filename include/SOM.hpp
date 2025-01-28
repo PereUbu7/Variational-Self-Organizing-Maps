@@ -149,7 +149,7 @@ public:
 	Eigen::VectorXf getNeuron(size_t index) const noexcept;
 	Eigen::VectorXf getSigmaNeuron(SomIndex index) const noexcept;
 	Eigen::VectorXf getSigmaNeuron(size_t index) const noexcept;
-	std::vector<std::string> getNeuronStrings(SomIndex index) const noexcept; // TODO: Implement
+	std::vector<std::string> getNeuronStrings(SomIndex index) const noexcept;
 	std::vector<std::string> getSigmaNeuronStrings(SomIndex index) const noexcept;
 	float getMaxValueOfFeature(size_t modelVectorIndex) const;
 	float getMinValueOfFeature(size_t modelVectorIndex) const;
@@ -157,6 +157,7 @@ public:
 	float getMinSigmaOfFeature(size_t modelVectorIndex) const;
 	Metrics getMetrics() const noexcept;
 	bool isTraining() const noexcept;
+	bool isCompatibleWithData(DataSet &data) const noexcept;
 	void randomInitialize(int seed, float sigma);
 	void addBmu(SomIndex position);
 	void updateUMatrix(const Eigen::VectorXf &weights);

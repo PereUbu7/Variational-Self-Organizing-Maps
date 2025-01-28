@@ -4,7 +4,7 @@
 
 struct ColumnSpec
 {
-    ColumnSpec(const std::string name, const float &weight, const int &isBinary) :
+    ColumnSpec(const std::string name, const float weight, const int isBinary) :
         name{name},
         weight{weight},
         isBinary{isBinary} {}
@@ -12,6 +12,6 @@ struct ColumnSpec
     ColumnSpec(std::string &&name, float &&weight, int &&isBinary) = delete;
     
     const std::string name;
-    const float &weight;
-    const int &isBinary;
+    const float weight;
+    const int isBinary;
 };

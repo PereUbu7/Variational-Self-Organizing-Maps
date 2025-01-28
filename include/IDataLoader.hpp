@@ -33,12 +33,12 @@ class IDataLoader
 
 		virtual void setColumnSpec(const std::vector<ColumnSpec> columnSpec) noexcept = 0;
 		virtual const std::vector<ColumnSpec> getColumnSpec() noexcept = 0;
-		virtual float &getWeight(size_t index) = 0;
-		virtual const std::vector<float> &getWeights() const noexcept = 0;
+		virtual float getWeight(size_t index) = 0;
+		virtual const std::vector<float> getWeights() const noexcept = 0;
 		virtual const std::vector<int> &getBinary() const noexcept = 0;
 		virtual const std::vector<int> &getContinuous() const noexcept = 0;
 		virtual std::string getName(size_t index) const noexcept = 0;
-		virtual const std::vector<std::string> &getNames() const noexcept = 0;
+		virtual const std::vector<std::string> getNames() const noexcept = 0;
 		virtual size_t getDepth() const noexcept = 0;
 		virtual bool isAtStartOfDataStream() const noexcept = 0;
 	
