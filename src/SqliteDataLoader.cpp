@@ -488,8 +488,6 @@ std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetc
 
 	auto depth = getDepth();
 
-	startTransaction();
-
 	auto maxIdValue = maxId();
 
 	currentId = currentId.has_value() ? currentId.value() : minId();
@@ -505,7 +503,7 @@ std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetc
 	ss << "SELECT ";
 	for(auto column : getNames())
 		ss << column << ',';
-	ss << "Id FROM " << _tableName << " WHERE Id>=" << currentId.value() << " AND Id <=" << maxLoadId << ';';
+	ss << "Id FROM " << _tableName << " WHERE Id>=? AND Id <=?;";
 	auto query = ss.str();
 
 	sqlite3_stmt *res;
@@ -514,8 +512,16 @@ std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetc
 	if(sqlite3_prepare_v2(db, query.c_str(), static_cast<int>(query.length()), &res, &tail) != SQLITE_OK)
 	{
 		std::cerr << "Cannot fetch data: " << sqlite3_errmsg(db) << '\n';
+		
+		/* Free res */
+		sqlite3_finalize(res);
+		
 		return std::make_tuple(std::vector<RowData>{}, std::nullopt, 0);
 	}
+
+	int parameterIndex = 1;
+	sqlite3_bind_int64(res, parameterIndex++, currentId.value());
+	sqlite3_bind_int64(res, parameterIndex++, maxLoadId);
 
 	while(sqlite3_step(res) == SQLITE_ROW)
 	{
@@ -532,8 +538,6 @@ std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetc
 
 		newData.push_back(std::move(currentRowData));
 	}
-
-	endTransaction();
 
 	/* Free res */
 	sqlite3_finalize(res);
