@@ -535,6 +535,9 @@ std::tuple<std::vector<RowData>, std::optional<int>, int> SqliteDataLoader::fetc
 
 	endTransaction();
 
+	/* Free res */
+	sqlite3_finalize(res);
+
 	std::cout << "Fetched whole batch\n";
 
 	return std::make_tuple(newData, currentId.emplace(currentId.value() + 1), maxIdValue);
