@@ -36,5 +36,6 @@ struct Transformation
     std::string Name{"Standard transformation"};
 
     static Transformation Standard(const std::vector<std::string> &columnNames);
+    static Transformation StandardMedianEstimator(const std::vector<std::string> &columnNames);
     static Transformation CombinatorialLinearRegression(const std::vector<std::string> &columnNames);
 };

@@ -38,6 +38,44 @@ Transformation Transformation::Standard(const std::vector<std::string> &columnNa
     };
 }
 
+Transformation Transformation::StandardMedianEstimator(const std::vector<std::string> &columnNames)
+{
+    return Transformation {
+        .Comparer =
+            [](const T &value, const T &model, const T &dispersion, const T &valueWeight)
+                { return model - value; },
+
+        .Stepper =
+            [](const T &value, const T &model, const T &valueWeight)
+                { return (value - model).array().sign(); },
+
+        .names{columnNames},
+        .Displayer =
+            [columnNames](const T &model)
+                {
+                auto disp = std::vector<std::string>{};
+                disp.reserve(columnNames.size());
+
+                for (size_t index{0}; index < columnNames.size(); ++index)
+                {
+                    std::stringstream ss;
+                    ss << columnNames[index] << " = " << model[index];
+
+                    disp.emplace_back(ss.str());
+                }
+                return disp;
+            },
+
+        .Length =
+        [](size_t vectorLength)
+        {
+            return vectorLength;
+        },
+
+        .Name = "Standard median estimator transformation"
+    };
+}
+
 Transformation Transformation::CombinatorialLinearRegression(const std::vector<std::string> &columnNames)
     {
         return Transformation{
